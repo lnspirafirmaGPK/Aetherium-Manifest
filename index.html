@@ -114,6 +114,56 @@
       font-size: 12px;
     }
 
+    #settings-panel {
+      position: fixed;
+      right: 68px;
+      top: 16px;
+      z-index: 42;
+      width: min(320px, calc(100vw - 24px));
+      padding: 12px;
+      display: none;
+      font-size: 12px;
+    }
+
+    body.ui-open #settings-panel {
+      display: block;
+    }
+
+    .settings-title {
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .setting-group { margin-top: 10px; }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .seg {
+      display: inline-flex;
+      gap: 6px;
+    }
+
+    .seg button {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      border-radius: 8px;
+      font-size: 11px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .seg button.active {
+      border-color: rgba(0,255,255,.65);
+      color: #d0ffff;
+    }
+
     #log {
       right: 18px;
       top: 284px;
@@ -244,6 +294,72 @@
       color: #ddd;
     }
 
+    #display-page-2 {
+      position: fixed;
+      inset: 0;
+      z-index: 9;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 20% 20%, rgba(0,255,255,.08), transparent 38%),
+                  radial-gradient(circle at 80% 80%, rgba(128,0,128,.12), transparent 42%),
+                  rgba(5,5,5,.72);
+      pointer-events: none;
+    }
+
+    body.display-page-2 #display-page-2 {
+      display: flex;
+    }
+
+    .display2-card {
+      width: min(760px, calc(100vw - 36px));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(10,10,14,.76);
+      backdrop-filter: blur(12px);
+      padding: 16px;
+    }
+
+    .display2-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .display2-cell {
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,.04);
+    }
+
+    .mini-boxes {
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      z-index: 11;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mini-box {
+      min-width: 130px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(8,8,10,.76);
+      font-size: 11px;
+      display: none;
+    }
+
+    body.show-box-1 #mini-box-1,
+    body.show-box-2 #mini-box-2,
+    body.show-box-3 #mini-box-3 {
+      display: block;
+    }
+
     .critical {
       border-color: var(--critical) !important;
       animation: flicker .14s infinite alternate;
@@ -259,6 +375,24 @@
   <canvas id="nervous-system"></canvas>
   <button id="settings-toggle" aria-label="toggle settings">⚙</button>
   <button id="chat-toggle" aria-label="toggle chat">Chat</button>
+
+  <aside class="hud" id="settings-panel">
+    <div class="settings-title">SETTINGS</div>
+    <div class="setting-group">
+      <div class="setting-row">
+        <span>Display Page</span>
+        <div class="seg" id="display-selector">
+          <button type="button" data-page="1" class="active">Page 1</button>
+          <button type="button" data-page="2">Page 2</button>
+        </div>
+      </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-row"><span>Mini Box #1</span><button class="btn" id="toggle-box-1">Toggle</button></div>
+      <div class="setting-row"><span>Mini Box #2</span><button class="btn" id="toggle-box-2">Toggle</button></div>
+      <div class="setting-row"><span>Mini Box #3</span><button class="btn" id="toggle-box-3">Toggle</button></div>
+    </div>
+  </aside>
 
   <aside class="hud" id="status">
     <div class="row"><strong>AETHERBUS / GUNUI STATUS</strong></div>
@@ -291,6 +425,7 @@
 
   <section class="hud" id="composer">
     <input id="intent-input" placeholder="พิมพ์ intent เช่น: ด่วน! สรุปข้อมูลให้หน่อย หรือ I feel confused and tired" />
+    <button class="btn" id="voice-btn" title="Voice chat" aria-label="voice chat">🎤</button>
     <button class="btn" id="send-btn">Emit Intent</button>
     <button class="btn" id="nirodha-btn">Nirodha</button>
   </section>
@@ -300,6 +435,24 @@
     <div class="compat-note" id="compat-note">mode: realtime</div>
     <img id="compat-frame" alt="compatibility-frame" />
   </aside>
+
+  <section id="display-page-2" aria-label="display page two">
+    <div class="display2-card">
+      <div><strong>DISPLAY PAGE 2</strong></div>
+      <div style="margin-top:6px;color:#b8daff;font-size:12px;">หน้านี้เป็นโหมดแสดงผลเพิ่มเติม โดยยังคงใช้ความสามารถระบบเดิมทั้งหมด</div>
+      <div class="display2-grid">
+        <div class="display2-cell">State: <span id="page2-state">IDLE</span></div>
+        <div class="display2-cell">Energy: <span id="page2-energy">100%</span></div>
+        <div class="display2-cell">Entropy: <span id="page2-entropy">0%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mini-boxes" aria-label="mini display boxes">
+    <div class="mini-box" id="mini-box-1">Mini Box 1 : System Pulse</div>
+    <div class="mini-box" id="mini-box-2">Mini Box 2 : Intent Monitor</div>
+    <div class="mini-box" id="mini-box-3">Mini Box 3 : Source Signals</div>
+  </section>
 
   <script>
     const canvas = document.getElementById('nervous-system');
@@ -347,8 +500,22 @@
       chatStream: document.getElementById('chat-stream'),
       sources: document.getElementById('sources'),
       settingsToggle: document.getElementById('settings-toggle'),
-      chatToggle: document.getElementById('chat-toggle')
+      chatToggle: document.getElementById('chat-toggle'),
+      displayPage2State: document.getElementById('page2-state'),
+      displayPage2Energy: document.getElementById('page2-energy'),
+      displayPage2Entropy: document.getElementById('page2-entropy')
     };
+
+    const displayButtons = Array.from(document.querySelectorAll('#display-selector button'));
+
+    function setDisplayPage(page) {
+      document.body.classList.toggle('display-page-2', page === '2');
+      displayButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
+    }
+
+    function toggleMiniBox(index) {
+      document.body.classList.toggle(`show-box-${index}`);
+    }
 
     const mouse = { x: -9999, y: -9999, active: false };
     let width = 0;
@@ -614,6 +781,10 @@
       refs.shapeChip.textContent = `shape: ${fsm.shape}`;
       refs.intentChip.textContent = `intent: ${fsm.intentCategory}`;
 
+      refs.displayPage2State.textContent = fsm.state;
+      refs.displayPage2Energy.textContent = `${Math.round(fsm.energy)}%`;
+      refs.displayPage2Entropy.textContent = `${Math.round(fsm.entropy)}%`;
+
       refs.status.classList.toggle('critical', fsm.state === 'CRITICAL');
       refs.compatNote.textContent = compatMode
         ? 'mode: compatibility (deterministic SVG snapshots every 500ms)'
@@ -710,6 +881,18 @@
       document.body.classList.toggle('ui-open');
     });
 
+    displayButtons.forEach(btn => {
+      btn.addEventListener('click', () => setDisplayPage(btn.dataset.page));
+    });
+
+    document.getElementById('toggle-box-1').addEventListener('click', () => toggleMiniBox(1));
+    document.getElementById('toggle-box-2').addEventListener('click', () => toggleMiniBox(2));
+    document.getElementById('toggle-box-3').addEventListener('click', () => toggleMiniBox(3));
+
+    document.getElementById('voice-btn').addEventListener('click', () => {
+      addBubble('system', 'voice input icon pressed (demo)');
+    });
+
     refs.chatToggle.addEventListener('click', () => {
       document.body.classList.toggle('chat-open');
     });
@@ -731,6 +914,7 @@
 
     document.body.classList.remove('ui-open');
     document.body.classList.remove('chat-open');
+    document.body.classList.remove('display-page-2');
     resize();
     detectCompatibilityMode();
     particles = Array.from({ length: 560 }, () => new Particle());
