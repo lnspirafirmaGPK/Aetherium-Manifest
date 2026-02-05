@@ -153,6 +153,13 @@ python3 -m http.server 4173
 
 ---
 
+
+## Tachyon Architecture Draft (Thai)
+
+เพิ่มเอกสารสเปกเชิงสถาปัตยกรรมสำหรับโครงการ **AETHERBUS TACHYON** (ภาษาไทย) เพื่อใช้เป็นเอกสารอ้างอิงระดับระบบ:
+
+- `docs/AETHERBUS_TACHYON_SPEC_TH.md`
+
 ## Conclusion
 
 Aetherium is not a traditional UI project; it is a **mind-body system**.
