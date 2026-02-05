@@ -130,6 +130,7 @@ A runnable prototype now exists in `index.html` with the interaction model reque
 - **Intent Processing:** keyword-triggered manifest mode for Thai landscape intents (`ทะเล`, `น้ำตก`, `ภูเขา`) plus `sea`.
 - **Light-Based Response:** holographic center projection + particle behavior transitions instead of chat bubbles.
 - **File Intake:** PDF/image attachment buffer with inline chip preview.
+- **Freeze Light System:** floating controls for Freeze/Save/Erase/Light Pen, voice-trigger keywords (`แช่แข็ง`, `freeze`, `บันทึก`, `ลบ`, `วาด`), frozen-point editing, and export UI for PNG plus printable PDF fallback.
 
 ### Run locally
 
