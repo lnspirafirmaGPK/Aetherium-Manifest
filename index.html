@@ -223,10 +223,183 @@
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
+
+    .floating-button {
+      position: fixed;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 30;
+      border: 1px solid var(--border-light);
+      border-radius: 999px;
+      padding: 10px 16px;
+      color: white;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .floating-button:hover {
+      transform: translateY(-2px);
+    }
+
+    #freeze-btn {
+      top: 20px;
+      border-color: #00ffff;
+      box-shadow: 0 0 16px rgba(0, 255, 255, 0.4);
+    }
+
+    #save-btn {
+      top: 74px;
+      border-color: #00ff88;
+      box-shadow: 0 0 16px rgba(0, 255, 136, 0.4);
+      display: none;
+    }
+
+    #erase-btn {
+      top: 128px;
+      border-color: #ff6688;
+      box-shadow: 0 0 16px rgba(255, 102, 136, 0.4);
+      display: none;
+    }
+
+    #pen-btn {
+      top: 182px;
+      border-color: #b68cff;
+      box-shadow: 0 0 16px rgba(182, 140, 255, 0.4);
+      display: none;
+    }
+
+    .mode-active {
+      outline: 2px solid #fff;
+    }
+
+    .document-save-ui,
+    .light-pen-ui {
+      position: fixed;
+      left: 20px;
+      bottom: 120px;
+      z-index: 40;
+      width: min(360px, calc(100% - 40px));
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      background: rgba(12, 12, 18, 0.85);
+      backdrop-filter: blur(10px);
+      color: #f3f3f3;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    .save-header,
+    .pen-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .save-header h3,
+    .pen-header h3 {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .close-btn {
+      cursor: pointer;
+      opacity: 0.7;
+    }
+
+    .format-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .format-option {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .format-option.selected {
+      border-color: var(--color-manifest);
+      background: rgba(255, 215, 0, 0.08);
+    }
+
+    .save-options,
+    .pen-actions,
+    .brush-controls {
+      display: flex;
+      gap: 8px;
+      padding: 0 12px 12px;
+      align-items: center;
+    }
+
+    .filename-input,
+    .save-button,
+    .pen-actions button,
+    .brush-controls input {
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      padding: 10px;
+      font-family: inherit;
+    }
+
+    .filename-input {
+      flex: 1;
+    }
+
+    .save-button,
+    .pen-actions button {
+      cursor: pointer;
+    }
+
+    .color-palette {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .color-option {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      margin: 0 auto;
+    }
+
+    .color-option.selected {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    }
+
+    canvas.erase-mode {
+      cursor: crosshair;
+    }
+
+    canvas.draw-mode {
+      cursor: cell;
+    }
   </style>
 </head>
 <body>
   <canvas id="nervous-system"></canvas>
+
+  <div class="floating-button" id="freeze-btn">❄️ <span>Freeze</span></div>
+  <div class="floating-button" id="save-btn">💾 <span>Save</span></div>
+  <div class="floating-button" id="erase-btn">🗑️ <span>Erase</span></div>
+  <div class="floating-button" id="pen-btn">🖌️ <span>Light Pen</span></div>
 
   <div id="hud-overlay">
     <div class="stat-row">
@@ -365,6 +538,277 @@
     const hologram = document.getElementById('hologram-display');
     const holoText = document.getElementById('hologram-text');
     const loader = document.getElementById('manifest-loader');
+    const freezeBtn = document.getElementById('freeze-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const eraseBtn = document.getElementById('erase-btn');
+    const penBtn = document.getElementById('pen-btn');
+
+    class LightDocument {
+      constructor() {
+        this.currentSnapshot = null;
+        this.currentFormat = 'PNG';
+        this.ui = this.createDocumentUI();
+      }
+
+      createDocumentUI() {
+        const docUI = document.createElement('div');
+        docUI.className = 'document-save-ui';
+        docUI.innerHTML = `
+          <div class="save-header">
+            <h3>💾 Save Frozen Light</h3>
+            <div class="close-btn" data-action="close">✕</div>
+          </div>
+          <div class="format-options">
+            <div class="format-option selected" data-format="PNG"><div>🖼️ PNG</div></div>
+            <div class="format-option" data-format="PDF"><div>📄 PDF</div></div>
+          </div>
+          <div class="save-options">
+            <input type="text" class="filename-input" value="frozen-light" />
+            <button class="save-button">บันทึกไฟล์</button>
+          </div>
+        `;
+        docUI.style.display = 'none';
+        document.body.appendChild(docUI);
+
+        docUI.querySelector('[data-action="close"]').addEventListener('click', () => {
+          docUI.style.display = 'none';
+        });
+
+        docUI.querySelectorAll('.format-option').forEach((option) => {
+          option.addEventListener('click', () => {
+            docUI.querySelectorAll('.format-option').forEach((e) => e.classList.remove('selected'));
+            option.classList.add('selected');
+            this.currentFormat = option.dataset.format;
+          });
+        });
+
+        docUI.querySelector('.save-button').addEventListener('click', () => {
+          const baseName = docUI.querySelector('.filename-input').value.trim() || 'frozen-light';
+          if (this.currentFormat === 'PDF') {
+            this.exportAsPDF(`${baseName}.pdf`);
+          } else {
+            this.exportAsPNG(`${baseName}.png`);
+          }
+        });
+
+        return docUI;
+      }
+
+      showSaveUI(snapshot) {
+        this.currentSnapshot = snapshot;
+        this.ui.style.display = 'block';
+      }
+
+      renderFrozenToCanvas(scale = 1) {
+        const renderCanvas = document.createElement('canvas');
+        renderCanvas.width = Math.floor(width * scale);
+        renderCanvas.height = Math.floor(height * scale);
+        const renderCtx = renderCanvas.getContext('2d');
+
+        const gradient = renderCtx.createLinearGradient(0, 0, renderCanvas.width, renderCanvas.height);
+        gradient.addColorStop(0, '#03030c');
+        gradient.addColorStop(1, '#0b1120');
+        renderCtx.fillStyle = gradient;
+        renderCtx.fillRect(0, 0, renderCanvas.width, renderCanvas.height);
+
+        if (!this.currentSnapshot?.points?.length) return renderCanvas;
+
+        this.currentSnapshot.points.forEach((point) => {
+          renderCtx.beginPath();
+          renderCtx.fillStyle = point.color || '#99f6ff';
+          renderCtx.globalAlpha = 0.92;
+          renderCtx.arc(point.x * scale, point.y * scale, (point.size + 0.8) * scale, 0, Math.PI * 2);
+          renderCtx.fill();
+        });
+
+        renderCtx.globalAlpha = 1;
+        renderCtx.fillStyle = 'rgba(255,255,255,0.8)';
+        renderCtx.font = `${14 * scale}px JetBrains Mono`;
+        renderCtx.fillText(`Aetherium Freeze • ${new Date(this.currentSnapshot.timestamp).toLocaleString()}`, 20 * scale, 30 * scale);
+        return renderCanvas;
+      }
+
+      triggerDownload(href, filename) {
+        const anchor = document.createElement('a');
+        anchor.href = href;
+        anchor.download = filename;
+        anchor.click();
+      }
+
+      exportAsPNG(filename = 'frozen-light.png') {
+        const imgCanvas = this.renderFrozenToCanvas(2);
+        this.triggerDownload(imgCanvas.toDataURL('image/png'), filename);
+        sysMsg.innerText = `SYSTEM: SAVED ${filename}`;
+      }
+
+      exportAsPDF(filename = 'frozen-light.pdf') {
+        const pdfCanvas = this.renderFrozenToCanvas(2);
+        const imageData = pdfCanvas.toDataURL('image/png');
+        const pdfShell = `<!doctype html><html><head><title>${filename}</title><style>body{margin:0;background:#10131f;display:flex;justify-content:center;align-items:center;height:100vh;}img{max-width:95vw;max-height:95vh;}</style></head><body><img src="${imageData}" alt="Frozen light"></body></html>`;
+        const blob = new Blob([pdfShell], { type: 'text/html' });
+        this.triggerDownload(URL.createObjectURL(blob), filename.replace(/\.pdf$/i, '.html'));
+        sysMsg.innerText = 'SYSTEM: PDF fallback exported as printable HTML snapshot';
+      }
+    }
+
+    class LightPen {
+      constructor() {
+        this.isActive = false;
+        this.isDrawing = false;
+        this.brushSize = 2;
+        this.currentColor = '#00ffff';
+        this.ui = this.createPenUI();
+        this.target = null;
+      }
+
+      createPenUI() {
+        const ui = document.createElement('div');
+        ui.className = 'light-pen-ui';
+        ui.style.display = 'none';
+        const palette = ['#ff0000', '#00ff88', '#00aaff', '#ffd700', '#ffffff', '#ff00dd', '#00ffff', '#ff8844', '#b68cff', '#7fffd4'];
+        ui.innerHTML = `
+          <div class="pen-header"><h3>🖌️ Light Pen</h3><div class="close-btn" data-action="close">✕</div></div>
+          <div class="color-palette">${palette.map((color, i) => `<div class="color-option ${i===6 ? 'selected' : ''}" data-color="${color}" style="background:${color}"></div>`).join('')}</div>
+          <div class="brush-controls"><label for="brush-size">Brush</label><input id="brush-size" type="range" min="1" max="8" value="2" /></div>
+          <div class="pen-actions"><button class="undo-btn">↶ Undo</button><button class="finish-btn">✅ เสร็จสิ้น</button></div>`;
+        document.body.appendChild(ui);
+
+        ui.querySelectorAll('.color-option').forEach((node) => {
+          node.addEventListener('click', () => {
+            ui.querySelectorAll('.color-option').forEach((e) => e.classList.remove('selected'));
+            node.classList.add('selected');
+            this.currentColor = node.dataset.color;
+          });
+        });
+        ui.querySelector('#brush-size').addEventListener('input', (e) => { this.brushSize = Number(e.target.value); });
+        ui.querySelector('.finish-btn').addEventListener('click', () => this.finish());
+        ui.querySelector('[data-action="close"]').addEventListener('click', () => this.finish());
+        ui.querySelector('.undo-btn').addEventListener('click', () => this.undo());
+        return ui;
+      }
+
+      activate(targetSnapshot) {
+        this.target = targetSnapshot;
+        this.isActive = true;
+        this.ui.style.display = 'block';
+        canvas.classList.add('draw-mode');
+      }
+
+      drawAt(x, y) {
+        if (!this.isActive || !this.target) return;
+        if (!this.target.history) this.target.history = [];
+        const point = { x, y, size: this.brushSize, color: this.currentColor, drawn: true };
+        this.target.points.push(point);
+        this.target.history.push(point);
+      }
+
+      undo() {
+        if (!this.target?.history?.length) return;
+        const lastPoint = this.target.history.pop();
+        const idx = this.target.points.lastIndexOf(lastPoint);
+        if (idx >= 0) this.target.points.splice(idx, 1);
+      }
+
+      finish() {
+        this.isActive = false;
+        this.isDrawing = false;
+        canvas.classList.remove('draw-mode');
+        this.ui.style.display = 'none';
+      }
+    }
+
+    class LightErase {
+      constructor() {
+        this.radius = 32;
+        this.isActive = false;
+      }
+
+      toggle(active) {
+        this.isActive = active;
+        canvas.classList.toggle('erase-mode', active);
+      }
+
+      eraseAt(snapshot, x, y) {
+        if (!snapshot?.points?.length) return;
+        snapshot.points = snapshot.points.filter((point) => {
+          const dx = point.x - x;
+          const dy = point.y - y;
+          return Math.sqrt(dx * dx + dy * dy) > this.radius;
+        });
+      }
+    }
+
+    class LightCrystallizer {
+      constructor() {
+        this.frozenStructures = [];
+        this.currentFrozenIndex = -1;
+      }
+
+      startFreeze() {
+        const snapshot = {
+          timestamp: Date.now(),
+          points: particles.map((p) => ({ x: p.x, y: p.y, size: p.size + 0.4, color: config.colors[state.mode] || '#99f6ff' })),
+          metadata: { mode: state.mode, entropy: state.entropy }
+        };
+        this.frozenStructures.push(snapshot);
+        this.currentFrozenIndex = this.frozenStructures.length - 1;
+        saveBtn.style.display = 'flex';
+        eraseBtn.style.display = 'flex';
+        penBtn.style.display = 'flex';
+        sysMsg.innerText = 'SYSTEM: LIGHT CRYSTALLIZED';
+        return snapshot;
+      }
+
+      getCurrentFrozen() {
+        return this.frozenStructures[this.currentFrozenIndex] || null;
+      }
+
+      drawFrozen(ctxRef) {
+        this.frozenStructures.forEach((snapshot) => {
+          snapshot.points.forEach((point) => {
+            ctxRef.beginPath();
+            ctxRef.fillStyle = point.color || '#99f6ff';
+            ctxRef.globalAlpha = 0.9;
+            ctxRef.arc(point.x, point.y, point.size, 0, Math.PI * 2);
+            ctxRef.fill();
+          });
+        });
+        ctxRef.globalAlpha = 1;
+      }
+
+      setupVoiceCommands(commands) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+        this.speechRecognizer = new SpeechRecognition();
+        this.speechRecognizer.lang = 'th-TH';
+        this.speechRecognizer.continuous = true;
+        this.speechRecognizer.interimResults = false;
+        this.speechRecognizer.onresult = (event) => {
+          const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+          Object.entries(commands).forEach(([keyword, action]) => {
+            if (transcript.includes(keyword)) action();
+          });
+        };
+      }
+    }
+
+    const lightDocument = new LightDocument();
+    const lightPen = new LightPen();
+    const lightErase = new LightErase();
+    const lightCrystallizer = new LightCrystallizer();
+
+    const freezeVoiceCommands = {
+      'แช่แข็ง': () => freezeBtn.click(),
+      'หยุดนิ่ง': () => freezeBtn.click(),
+      freeze: () => freezeBtn.click(),
+      'บันทึก': () => saveBtn.click(),
+      save: () => saveBtn.click(),
+      'ลบ': () => eraseBtn.click(),
+      erase: () => eraseBtn.click(),
+      'วาด': () => penBtn.click(),
+      draw: () => penBtn.click()
+    };
+    lightCrystallizer.setupVoiceCommands(freezeVoiceCommands);
 
     attachBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (event) => {
@@ -389,6 +833,68 @@
         sysMsg.innerText = 'SYSTEM: AWAITING INTENT';
         chatInput.placeholder = 'ส่งข้อความหรือเจตจำนง...';
       }
+    });
+
+    freezeBtn.addEventListener('click', () => {
+      lightCrystallizer.startFreeze();
+      freezeBtn.classList.add('mode-active');
+      setTimeout(() => freezeBtn.classList.remove('mode-active'), 600);
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const frozen = lightCrystallizer.getCurrentFrozen();
+      if (!frozen) return;
+      lightDocument.showSaveUI(frozen);
+    });
+
+    eraseBtn.addEventListener('click', () => {
+      const willActivate = !lightErase.isActive;
+      lightErase.toggle(willActivate);
+      eraseBtn.classList.toggle('mode-active', willActivate);
+      if (willActivate) {
+        lightPen.finish();
+        penBtn.classList.remove('mode-active');
+        sysMsg.innerText = 'SYSTEM: ERASE MODE ACTIVE';
+      } else {
+        sysMsg.innerText = 'SYSTEM: ERASE MODE OFF';
+      }
+    });
+
+    penBtn.addEventListener('click', () => {
+      const frozen = lightCrystallizer.getCurrentFrozen();
+      if (!frozen) return;
+      const willActivate = !lightPen.isActive;
+      penBtn.classList.toggle('mode-active', willActivate);
+      if (willActivate) {
+        lightErase.toggle(false);
+        eraseBtn.classList.remove('mode-active');
+        lightPen.activate(frozen);
+        sysMsg.innerText = 'SYSTEM: LIGHT PEN ACTIVE';
+      } else {
+        lightPen.finish();
+        sysMsg.innerText = 'SYSTEM: LIGHT PEN OFF';
+      }
+    });
+
+    canvas.addEventListener('mousedown', (event) => {
+      const frozen = lightCrystallizer.getCurrentFrozen();
+      if (!frozen) return;
+      if (lightErase.isActive) {
+        lightErase.eraseAt(frozen, event.clientX, event.clientY);
+      }
+      if (lightPen.isActive) {
+        lightPen.isDrawing = true;
+        lightPen.drawAt(event.clientX, event.clientY);
+      }
+    });
+
+    canvas.addEventListener('mousemove', (event) => {
+      if (!lightPen.isActive || !lightPen.isDrawing) return;
+      lightPen.drawAt(event.clientX, event.clientY);
+    });
+
+    window.addEventListener('mouseup', () => {
+      lightPen.isDrawing = false;
     });
 
     function processIntent() {
@@ -442,6 +948,8 @@
         p.update();
         p.draw();
       });
+
+      lightCrystallizer.drawFrozen(ctx);
 
       document.getElementById('bar-energy').style.width = `${state.energy}%`;
       document.getElementById('bar-energy').style.backgroundColor = config.colors[state.mode];
