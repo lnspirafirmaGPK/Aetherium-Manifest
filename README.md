@@ -168,3 +168,14 @@ Aetherium is not a traditional UI project; it is a **mind-body system**.
 - **Aetherium Manifest** is the perceptual embodiment of that intention.
 
 Together, they transform AI interaction from text-first tooling into a living visual presence.
+
+## AETHERIUM GENESIS: The Blueprint of Living Light (Locked Axis)
+
+ได้เพิ่มแกนองค์ความรู้เชิงสถาปัตยกรรม **AETHERIUM GENESIS: THE BLUEPRINT OF LIVING LIGHT** ไว้เป็นเอกสารอ้างอิงหลักแบบ *locked axis* เพื่อใช้เป็นหลักยึดเดียวกันระหว่างโค้ดและวิวัฒนาการระบบในอนาคต โดยไม่ลบเนื้อหาเดิมของโครงการ.
+
+- เอกสารหลัก: `docs/AETHERIUM_GENESIS_BLUEPRINT_TH.md`
+- สถานะ: Canonical / Locked Axis
+- เป้าหมาย: เก็บทั้งมุมปรัชญา (Inspira), สถาปัตยกรรม (Firma), กลศาสตร์แสง, วงจรชีวิต และยุทธศาสตร์การพัฒนาในรูปที่อ้างอิงกลับมาใช้ในโค้ดได้
+
+ภายใน `index.html` มีการเพิ่มส่วนแสดงผล **Blueprint Lock Panel** เพื่อยืนยันเวอร์ชันแกนความรู้ที่รันอยู่ พร้อม metadata ของล็อกเอกสาร (ชื่อแกน, เวอร์ชัน, lock id, และหลักการแกนกลาง) เพื่อให้สถานะความรู้โปร่งใสใน runtime.
+

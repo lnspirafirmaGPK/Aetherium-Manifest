@@ -244,10 +244,46 @@
       line-height: 1.4;
     }
 
+
+
+    #blueprint {
+      left: 18px;
+      top: 16px;
+      width: min(460px, calc(100vw - 36px));
+      padding: 12px;
+      font-size: 11px;
+      line-height: 1.45;
+      max-height: 42vh;
+      overflow: auto;
+    }
+
+    .lock-badge {
+      display: inline-block;
+      margin-left: 8px;
+      border: 1px solid rgba(0,255,255,.55);
+      border-radius: 999px;
+      padding: 2px 8px;
+      color: #c7ffff;
+      font-size: 10px;
+    }
+
+    .blueprint-meta {
+      margin-top: 8px;
+      color: #b8daff;
+      font-size: 10px;
+    }
+
+    .blueprint-list {
+      margin: 8px 0 0;
+      padding-left: 16px;
+      color: #dce9ff;
+    }
+
     body:not(.ui-open) #status,
     body:not(.ui-open) #log,
     body:not(.ui-open) #conversation,
-    body:not(.ui-open) #compat {
+    body:not(.ui-open) #compat,
+    body:not(.ui-open) #blueprint {
       display: none;
     }
 
@@ -430,6 +466,14 @@
     <button class="btn" id="nirodha-btn">Nirodha</button>
   </section>
 
+
+
+  <aside class="hud" id="blueprint">
+    <div><strong>BLUEPRINT OF LIVING LIGHT</strong><span class="lock-badge">LOCKED AXIS</span></div>
+    <div class="blueprint-meta" id="blueprint-meta"></div>
+    <ul class="blueprint-list" id="blueprint-list"></ul>
+  </aside>
+
   <aside class="hud" id="compat">
     <div><strong>COMPATIBILITY RENDER</strong></div>
     <div class="compat-note" id="compat-note">mode: realtime</div>
@@ -503,8 +547,35 @@
       chatToggle: document.getElementById('chat-toggle'),
       displayPage2State: document.getElementById('page2-state'),
       displayPage2Energy: document.getElementById('page2-energy'),
-      displayPage2Entropy: document.getElementById('page2-entropy')
+      displayPage2Entropy: document.getElementById('page2-entropy'),
+      blueprintMeta: document.getElementById('blueprint-meta'),
+      blueprintList: document.getElementById('blueprint-list')
     };
+
+
+
+    const AETHERIUM_BLUEPRINT = Object.freeze({
+      axis: 'AETHERIUM GENESIS: THE BLUEPRINT OF LIVING LIGHT',
+      version: 'v1.0.0-locked',
+      lockId: 'akashic-axis-001',
+      core: Object.freeze([
+        'Dualism: Inspira (เจตจำนง) + Firma (โครงสร้าง)',
+        'PanGenesis: Git เป็น Akashic Record',
+        'ALO JIT: ขับเคลื่อนด้วย Pure Intent',
+        'Intent-to-Particle Flux: เจตนา -> สนามแรง -> แสงมีชีวิต',
+        'Metabolic Transparency: สี/ความสว่างสะท้อนพลังงานระบบ'
+      ])
+    });
+
+    function renderBlueprintLock() {
+      refs.blueprintMeta.textContent = `axis=${AETHERIUM_BLUEPRINT.axis} | version=${AETHERIUM_BLUEPRINT.version} | lock=${AETHERIUM_BLUEPRINT.lockId}`;
+      refs.blueprintList.innerHTML = '';
+      for (const item of AETHERIUM_BLUEPRINT.core) {
+        const li = document.createElement('li');
+        li.textContent = item;
+        refs.blueprintList.appendChild(li);
+      }
+    }
 
     const displayButtons = Array.from(document.querySelectorAll('#display-selector button'));
 
@@ -523,10 +594,138 @@
     let particles = [];
     let compatMode = false;
     let compatLastFrameAt = 0;
+    let structuredAttractors = { face: [], human: [] };
 
     function resize() {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
+      structuredAttractors = buildStructuredAttractors();
+    }
+
+    function samplePolyline(points, stepsPerSegment = 14) {
+      const samples = [];
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const a = points[i];
+        const b = points[i + 1];
+        for (let s = 0; s < stepsPerSegment; s += 1) {
+          const t = s / stepsPerSegment;
+          samples.push({
+            x: a.x + (b.x - a.x) * t,
+            y: a.y + (b.y - a.y) * t,
+            tx: b.x - a.x,
+            ty: b.y - a.y
+          });
+        }
+      }
+      return samples;
+    }
+
+    function sampleEllipse(cx, cy, rx, ry, count) {
+      const samples = [];
+      for (let i = 0; i < count; i += 1) {
+        const a = (i / count) * Math.PI * 2;
+        samples.push({
+          x: cx + Math.cos(a) * rx,
+          y: cy + Math.sin(a) * ry,
+          tx: -Math.sin(a) * rx,
+          ty: Math.cos(a) * ry
+        });
+      }
+      return samples;
+    }
+
+    function buildStructuredAttractors() {
+      const cx = width * 0.5;
+      const faceCy = height * 0.49;
+
+      const jaw = samplePolyline([
+        { x: cx - width * 0.18, y: faceCy - height * 0.03 },
+        { x: cx - width * 0.14, y: faceCy + height * 0.11 },
+        { x: cx - width * 0.08, y: faceCy + height * 0.2 },
+        { x: cx, y: faceCy + height * 0.24 },
+        { x: cx + width * 0.08, y: faceCy + height * 0.2 },
+        { x: cx + width * 0.14, y: faceCy + height * 0.11 },
+        { x: cx + width * 0.18, y: faceCy - height * 0.03 }
+      ], 10);
+
+      const noseBridge = samplePolyline([
+        { x: cx, y: faceCy - height * 0.13 },
+        { x: cx - width * 0.012, y: faceCy - height * 0.01 },
+        { x: cx, y: faceCy + height * 0.08 },
+        { x: cx + width * 0.025, y: faceCy + height * 0.1 },
+        { x: cx - width * 0.025, y: faceCy + height * 0.1 }
+      ], 12);
+
+      const leftEye = sampleEllipse(cx - width * 0.075, faceCy - height * 0.04, width * 0.05, height * 0.022, 28);
+      const rightEye = sampleEllipse(cx + width * 0.075, faceCy - height * 0.04, width * 0.05, height * 0.022, 28);
+      const browL = samplePolyline([
+        { x: cx - width * 0.135, y: faceCy - height * 0.09 },
+        { x: cx - width * 0.08, y: faceCy - height * 0.11 },
+        { x: cx - width * 0.02, y: faceCy - height * 0.095 }
+      ], 10);
+      const browR = samplePolyline([
+        { x: cx + width * 0.02, y: faceCy - height * 0.095 },
+        { x: cx + width * 0.08, y: faceCy - height * 0.11 },
+        { x: cx + width * 0.135, y: faceCy - height * 0.09 }
+      ], 10);
+
+      const lipsOuter = sampleEllipse(cx, faceCy + height * 0.13, width * 0.072, height * 0.028, 40);
+      const cheekFlowL = samplePolyline([
+        { x: cx - width * 0.16, y: faceCy + height * 0.04 },
+        { x: cx - width * 0.12, y: faceCy + height * 0.085 },
+        { x: cx - width * 0.06, y: faceCy + height * 0.11 }
+      ], 9);
+      const cheekFlowR = samplePolyline([
+        { x: cx + width * 0.06, y: faceCy + height * 0.11 },
+        { x: cx + width * 0.12, y: faceCy + height * 0.085 },
+        { x: cx + width * 0.16, y: faceCy + height * 0.04 }
+      ], 9);
+
+      const face = [jaw, noseBridge, leftEye, rightEye, browL, browR, lipsOuter, cheekFlowL, cheekFlowR].flat();
+
+      const shoulderY = faceCy + height * 0.32;
+      const humanFrame = samplePolyline([
+        { x: cx - width * 0.12, y: shoulderY },
+        { x: cx - width * 0.18, y: shoulderY + height * 0.13 },
+        { x: cx - width * 0.2, y: shoulderY + height * 0.29 },
+        { x: cx - width * 0.19, y: shoulderY + height * 0.4 }
+      ], 12).concat(samplePolyline([
+        { x: cx + width * 0.12, y: shoulderY },
+        { x: cx + width * 0.18, y: shoulderY + height * 0.13 },
+        { x: cx + width * 0.2, y: shoulderY + height * 0.29 },
+        { x: cx + width * 0.19, y: shoulderY + height * 0.4 }
+      ], 12));
+
+      const torsoFlow = samplePolyline([
+        { x: cx - width * 0.08, y: shoulderY + height * 0.03 },
+        { x: cx - width * 0.06, y: shoulderY + height * 0.14 },
+        { x: cx - width * 0.05, y: shoulderY + height * 0.3 },
+        { x: cx - width * 0.02, y: shoulderY + height * 0.41 },
+        { x: cx + width * 0.02, y: shoulderY + height * 0.41 },
+        { x: cx + width * 0.05, y: shoulderY + height * 0.3 },
+        { x: cx + width * 0.06, y: shoulderY + height * 0.14 },
+        { x: cx + width * 0.08, y: shoulderY + height * 0.03 }
+      ], 8);
+
+      const human = face.concat(humanFrame, torsoFlow);
+      return { face, human };
+    }
+
+    function nearestStructuredAttractor(type, x, y) {
+      const points = structuredAttractors[type] || [];
+      if (!points.length) return null;
+      let minDist = Infinity;
+      let nearest = points[0];
+      for (const point of points) {
+        const dx = point.x - x;
+        const dy = point.y - y;
+        const d = dx * dx + dy * dy;
+        if (d < minDist) {
+          minDist = d;
+          nearest = point;
+        }
+      }
+      return nearest;
     }
 
     class Particle {
@@ -575,14 +774,17 @@
           this.vx += 0.06 + turbulence * 0.1;
           this.vy += (flowY - this.y) * 0.0012;
         } else if (fsm.shape === 'face' || fsm.shape === 'human') {
-          const cx = width * 0.5;
-          const cy = height * 0.52;
-          const phase = this.seed * Math.PI * 2;
-          const r = fsm.shape === 'human' ? width * 0.14 : width * 0.12;
-          const targetX = cx + Math.cos(phase) * r * (0.65 + this.seed * 0.5);
-          const targetY = cy + Math.sin(phase) * r * (0.9 + this.seed * 0.35);
-          this.vx += (targetX - this.x) * 0.00042;
-          this.vy += (targetY - this.y) * 0.00042;
+          const nearest = nearestStructuredAttractor(fsm.shape, this.x, this.y);
+          if (nearest) {
+            const pull = fsm.shape === 'human' ? 0.00052 : 0.0006;
+            this.vx += (nearest.x - this.x) * pull;
+            this.vy += (nearest.y - this.y) * pull;
+
+            const tangentMag = Math.max(0.001, Math.hypot(nearest.tx, nearest.ty));
+            const orbit = (fsm.shape === 'human' ? 0.03 : 0.038) + turbulence * 0.028;
+            this.vx += (nearest.tx / tangentMag) * orbit;
+            this.vy += (nearest.ty / tangentMag) * orbit;
+          }
         } else {
           this.vx += Math.sin(this.y * 0.009 + t * 0.001) * (0.03 + turbulence * 0.06);
           this.vy += Math.cos(this.x * 0.009 + t * 0.001) * (0.03 + turbulence * 0.06);
@@ -919,6 +1121,7 @@
     detectCompatibilityMode();
     particles = Array.from({ length: 560 }, () => new Particle());
     renderCompatFrame();
+    renderBlueprintLock();
     renderHUD();
     requestAnimationFrame(tick);
   </script>
