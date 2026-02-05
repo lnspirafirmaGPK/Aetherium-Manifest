@@ -244,10 +244,46 @@
       line-height: 1.4;
     }
 
+
+
+    #blueprint {
+      left: 18px;
+      top: 16px;
+      width: min(460px, calc(100vw - 36px));
+      padding: 12px;
+      font-size: 11px;
+      line-height: 1.45;
+      max-height: 42vh;
+      overflow: auto;
+    }
+
+    .lock-badge {
+      display: inline-block;
+      margin-left: 8px;
+      border: 1px solid rgba(0,255,255,.55);
+      border-radius: 999px;
+      padding: 2px 8px;
+      color: #c7ffff;
+      font-size: 10px;
+    }
+
+    .blueprint-meta {
+      margin-top: 8px;
+      color: #b8daff;
+      font-size: 10px;
+    }
+
+    .blueprint-list {
+      margin: 8px 0 0;
+      padding-left: 16px;
+      color: #dce9ff;
+    }
+
     body:not(.ui-open) #status,
     body:not(.ui-open) #log,
     body:not(.ui-open) #conversation,
-    body:not(.ui-open) #compat {
+    body:not(.ui-open) #compat,
+    body:not(.ui-open) #blueprint {
       display: none;
     }
 
@@ -430,6 +466,14 @@
     <button class="btn" id="nirodha-btn">Nirodha</button>
   </section>
 
+
+
+  <aside class="hud" id="blueprint">
+    <div><strong>BLUEPRINT OF LIVING LIGHT</strong><span class="lock-badge">LOCKED AXIS</span></div>
+    <div class="blueprint-meta" id="blueprint-meta"></div>
+    <ul class="blueprint-list" id="blueprint-list"></ul>
+  </aside>
+
   <aside class="hud" id="compat">
     <div><strong>COMPATIBILITY RENDER</strong></div>
     <div class="compat-note" id="compat-note">mode: realtime</div>
@@ -503,8 +547,35 @@
       chatToggle: document.getElementById('chat-toggle'),
       displayPage2State: document.getElementById('page2-state'),
       displayPage2Energy: document.getElementById('page2-energy'),
-      displayPage2Entropy: document.getElementById('page2-entropy')
+      displayPage2Entropy: document.getElementById('page2-entropy'),
+      blueprintMeta: document.getElementById('blueprint-meta'),
+      blueprintList: document.getElementById('blueprint-list')
     };
+
+
+
+    const AETHERIUM_BLUEPRINT = Object.freeze({
+      axis: 'AETHERIUM GENESIS: THE BLUEPRINT OF LIVING LIGHT',
+      version: 'v1.0.0-locked',
+      lockId: 'akashic-axis-001',
+      core: Object.freeze([
+        'Dualism: Inspira (เจตจำนง) + Firma (โครงสร้าง)',
+        'PanGenesis: Git เป็น Akashic Record',
+        'ALO JIT: ขับเคลื่อนด้วย Pure Intent',
+        'Intent-to-Particle Flux: เจตนา -> สนามแรง -> แสงมีชีวิต',
+        'Metabolic Transparency: สี/ความสว่างสะท้อนพลังงานระบบ'
+      ])
+    });
+
+    function renderBlueprintLock() {
+      refs.blueprintMeta.textContent = `axis=${AETHERIUM_BLUEPRINT.axis} | version=${AETHERIUM_BLUEPRINT.version} | lock=${AETHERIUM_BLUEPRINT.lockId}`;
+      refs.blueprintList.innerHTML = '';
+      for (const item of AETHERIUM_BLUEPRINT.core) {
+        const li = document.createElement('li');
+        li.textContent = item;
+        refs.blueprintList.appendChild(li);
+      }
+    }
 
     const displayButtons = Array.from(document.querySelectorAll('#display-selector button'));
 
@@ -1050,6 +1121,7 @@
     detectCompatibilityMode();
     particles = Array.from({ length: 560 }, () => new Particle());
     renderCompatFrame();
+    renderBlueprintLock();
     renderHUD();
     requestAnimationFrame(tick);
   </script>
