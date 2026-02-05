@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AETHERIUM MANIFEST: Living Interface</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;700&family=Sarabun:wght@300;500&display=swap');
+
+    :root {
+      --void-bg: #050505;
+      --color-perception: #00ffff;
+      --color-empathy: #bc13fe;
+      --color-decay: #a0522d;
+      --color-manifest: #ffd700;
+      --glass-panel: rgba(20, 20, 20, 0.7);
+      --border-light: rgba(255, 255, 255, 0.15);
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--void-bg);
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', 'Sarabun', monospace;
+    }
+
+    canvas#nervous-system {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    #hud-overlay {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      width: 280px;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+      background: var(--glass-panel);
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+    }
+
+    .stat-row {
+      margin-bottom: 12px;
+    }
+
+    .stat-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      color: #888;
+      font-size: 0.75rem;
+    }
+
+    .progress-bar-container {
+      height: 4px;
+      border-radius: 2px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 100%;
+      background: var(--color-perception);
+      box-shadow: 0 0 10px currentColor;
+      transition: width 0.5s ease, background-color 1s ease;
+    }
+
+    .system-msg {
+      margin-top: 10px;
+      color: var(--color-perception);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+
+    #input-deck {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 90%;
+      max-width: 600px;
+      padding: 10px;
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      background: rgba(10, 10, 10, 0.8);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    #input-deck:focus-within {
+      border-color: var(--color-perception);
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+    }
+
+    .icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+      transition: color 0.3s, background 0.3s;
+    }
+
+    .icon-btn:hover {
+      color: var(--color-perception);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .icon-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    #chat-input {
+      flex-grow: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #fff;
+      font-size: 1rem;
+      padding: 8px;
+      font-family: 'Sarabun', sans-serif;
+    }
+
+    #chat-input::placeholder {
+      color: #555;
+      font-style: italic;
+    }
+
+    .voice-active {
+      color: var(--color-empathy) !important;
+      animation: pulse-voice 1.5s infinite;
+    }
+
+    @keyframes pulse-voice {
+      0% {
+        box-shadow: 0 0 0 0 rgba(188, 19, 254, 0.4);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(188, 19, 254, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(188, 19, 254, 0);
+      }
+    }
+
+    #file-preview {
+      position: absolute;
+      bottom: 70px;
+      left: 0;
+      display: flex;
+      gap: 10px;
+      padding: 0 10px;
+    }
+
+    .file-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border: 1px solid var(--color-perception);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--color-perception);
+      font-size: 0.8rem;
+    }
+
+    #hologram-display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+
+    #hologram-text {
+      color: var(--color-manifest);
+      text-shadow: 0 0 20px var(--color-manifest);
+      letter-spacing: 4px;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .loading-light {
+      width: 50px;
+      height: 50px;
+      margin: 0 auto 20px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top: 2px solid var(--color-manifest);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="nervous-system"></canvas>
+
+  <div id="hud-overlay">
+    <div class="stat-row">
+      <div class="stat-label"><span>ENERGY (METABOLISM)</span> <span id="val-energy">100%</span></div>
+      <div class="progress-bar-container"><div class="progress-bar" id="bar-energy"></div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label"><span>ENTROPY (CHAOS)</span> <span id="val-entropy">10%</span></div>
+      <div class="progress-bar-container"><div class="progress-bar" id="bar-entropy" style="background: var(--color-decay); width: 10%"></div></div>
+    </div>
+    <div class="system-msg" id="sys-msg">SYSTEM: AWAITING INTENT</div>
+  </div>
+
+  <div id="hologram-display">
+    <div class="loading-light" id="manifest-loader" style="display: none"></div>
+    <div id="hologram-text"></div>
+  </div>
+
+  <div id="input-deck">
+    <input type="file" id="file-upload" hidden multiple accept=".pdf,image/*" />
+    <div id="file-preview"></div>
+
+    <button class="icon-btn" id="btn-attach" title="แนบเอกสาร/รูปภาพ">
+      <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" /></svg>
+    </button>
+
+    <input type="text" id="chat-input" placeholder="ส่งข้อความหรือเจตจำนง..." />
+
+    <button class="icon-btn" id="btn-voice" title="สนทนาด้วยเสียง">
+      <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" /><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" /></svg>
+    </button>
+
+    <button class="icon-btn" id="btn-send" title="ส่งข้อมูล">
+      <svg viewBox="0 0 24 24" style="fill: var(--color-perception)"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" /></svg>
+    </button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('nervous-system');
+    const ctx = canvas.getContext('2d');
+
+    const state = {
+      energy: 100,
+      entropy: 10,
+      mode: 'IDLE'
+    };
+
+    const config = {
+      particleCount: 200,
+      baseSpeed: 0.8,
+      colors: {
+        IDLE: '#00FFFF',
+        LISTENING: '#BC13FE',
+        PROCESSING: '#FFD700',
+        MANIFESTING: '#FFFFFF'
+      }
+    };
+
+    let width;
+    let height;
+    let particles = [];
+    let center = { x: 0, y: 0 };
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      center = { x: width / 2, y: height / 2 };
+    }
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * config.baseSpeed;
+        this.vy = (Math.random() - 0.5) * config.baseSpeed;
+        this.size = Math.random() * 2 + 0.5;
+      }
+
+      update() {
+        if (state.mode === 'MANIFESTING') {
+          const dx = center.x - this.x;
+          const dy = center.y - this.y;
+          this.vx += dx * 0.005;
+          this.vy += dy * 0.005;
+          this.vx *= 0.9;
+          this.vy *= 0.9;
+        } else if (state.mode === 'PROCESSING') {
+          const dx = this.x - center.x;
+          const dy = this.y - center.y;
+          this.vx += -dy * 0.001;
+          this.vy += dx * 0.001;
+        } else {
+          this.vx += (Math.random() - 0.5) * 0.1;
+          this.vy += (Math.random() - 0.5) * 0.1;
+        }
+
+        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        if (speed > 5) {
+          this.vx *= 0.9;
+          this.vy *= 0.9;
+        }
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (state.mode !== 'MANIFESTING') {
+          if (this.x < 0) this.x = width;
+          if (this.x > width) this.x = 0;
+          if (this.y < 0) this.y = height;
+          if (this.y > height) this.y = 0;
+        }
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = config.colors[state.mode] || '#fff';
+        ctx.fill();
+      }
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    for (let i = 0; i < config.particleCount; i += 1) particles.push(new Particle());
+
+    const fileInput = document.getElementById('file-upload');
+    const attachBtn = document.getElementById('btn-attach');
+    const voiceBtn = document.getElementById('btn-voice');
+    const sendBtn = document.getElementById('btn-send');
+    const chatInput = document.getElementById('chat-input');
+    const sysMsg = document.getElementById('sys-msg');
+    const hologram = document.getElementById('hologram-display');
+    const holoText = document.getElementById('hologram-text');
+    const loader = document.getElementById('manifest-loader');
+
+    attachBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const preview = document.getElementById('file-preview');
+      preview.innerHTML = `<div class="file-chip">📎 ${file.name}</div>`;
+      sysMsg.innerText = `SYSTEM: FILE BUFFERED [${file.type}]`;
+    });
+
+    let isListening = false;
+    voiceBtn.addEventListener('click', () => {
+      isListening = !isListening;
+      if (isListening) {
+        voiceBtn.classList.add('voice-active');
+        state.mode = 'LISTENING';
+        sysMsg.innerText = 'SYSTEM: LISTENING TO VOICE FREQUENCY...';
+        chatInput.placeholder = 'กำลังฟัง...';
+      } else {
+        voiceBtn.classList.remove('voice-active');
+        state.mode = 'IDLE';
+        sysMsg.innerText = 'SYSTEM: AWAITING INTENT';
+        chatInput.placeholder = 'ส่งข้อความหรือเจตจำนง...';
+      }
+    });
+
+    function processIntent() {
+      const text = chatInput.value.toLowerCase().trim();
+      const hasFile = fileInput.files.length > 0;
+      if (!text && !hasFile) return;
+
+      state.mode = 'PROCESSING';
+      sysMsg.innerText = 'SYSTEM: ANALYZING INTENT VECTORS...';
+      hologram.style.opacity = 1;
+      loader.style.display = 'block';
+      holoText.innerText = '';
+
+      chatInput.value = '';
+      document.getElementById('file-preview').innerHTML = '';
+
+      setTimeout(() => {
+        state.mode = 'MANIFESTING';
+        loader.style.display = 'none';
+
+        if (text.includes('ทะเล') || text.includes('น้ำตก') || text.includes('ภูเขา') || text.includes('sea')) {
+          holoText.innerText = `MANIFESTING: "${text.toUpperCase()}"`;
+          sysMsg.innerText = 'SYSTEM: CONSTRUCTING VISUAL REALITY FROM DATA';
+        } else if (hasFile) {
+          holoText.innerText = 'DOCUMENT RECEIVED';
+          sysMsg.innerText = 'SYSTEM: PARSING PDF STRUCTURE...';
+        } else {
+          holoText.innerText = 'UNDERSTOOD';
+          sysMsg.innerText = 'SYSTEM: INTENT ACKNOWLEDGED';
+        }
+
+        setTimeout(() => {
+          state.mode = 'IDLE';
+          hologram.style.opacity = 0;
+          sysMsg.innerText = 'SYSTEM: AWAITING NEW INTENT';
+          particles.forEach((p) => p.reset());
+        }, 4000);
+      }, 2000);
+    }
+
+    sendBtn.addEventListener('click', processIntent);
+    chatInput.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') processIntent();
+    });
+
+    function animate() {
+      ctx.fillStyle = 'rgba(5, 5, 5, 0.2)';
+      ctx.fillRect(0, 0, width, height);
+
+      particles.forEach((p) => {
+        p.update();
+        p.draw();
+      });
+
+      document.getElementById('bar-energy').style.width = `${state.energy}%`;
+      document.getElementById('bar-energy').style.backgroundColor = config.colors[state.mode];
+      document.getElementById('bar-entropy').style.width = `${state.entropy}%`;
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
