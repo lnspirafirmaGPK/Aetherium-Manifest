@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#050505" />
+  <link rel="manifest" href="app.webmanifest" />
   <title>Aetherium Genesis Manifest</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sarabun:wght@300;500&display=swap');
@@ -437,6 +439,7 @@
       <span class="chip" id="shape-chip">shape: cloud</span>
       <span class="chip" id="intent-chip">intent: chat</span>
       <span class="chip" id="quality-chip">quality: auto</span>
+      <span class="chip" id="gate-chip">gate: accept</span>
     </div>
     <div class="row">
       <div class="row-head"><span>ENERGY</span><span id="energy-text">100%</span></div>
@@ -541,6 +544,7 @@
       shapeChip: document.getElementById('shape-chip'),
       intentChip: document.getElementById('intent-chip'),
       qualityChip: document.getElementById('quality-chip'),
+      gateChip: document.getElementById('gate-chip'),
       json: document.getElementById('intent-json'),
       status: document.getElementById('status'),
       compatNote: document.getElementById('compat-note'),
@@ -570,6 +574,28 @@
         'Metabolic Transparency: สี/ความสว่างสะท้อนพลังงานระบบ'
       ])
     });
+
+    const PATALIMOKKHA_CODE = Object.freeze({
+      maxLoad: 88,
+      minEnergyForDeepReasoning: 14,
+      maxEntropyForAcceptance: 90,
+      maxDeferredItems: 18
+    });
+
+    const metabolicWeights = Object.freeze({
+      request_creation: 0.58,
+      analysis: 0.74,
+      error_recovery: 0.67,
+      request: 0.64,
+      command: 0.7,
+      chat: 0.42
+    });
+
+    const shadowMemory = {
+      deferred: [],
+      debrisCleanups: 0,
+      lastDreamAt: 0
+    };
 
     function renderBlueprintLock() {
       refs.blueprintMeta.textContent = `axis=${AETHERIUM_BLUEPRINT.axis} | version=${AETHERIUM_BLUEPRINT.version} | lock=${AETHERIUM_BLUEPRINT.lockId}`;
@@ -830,6 +856,86 @@
       return Math.max(min, Math.min(max, value));
     }
 
+    function runSystemConsistencyCheck() {
+      fsm.energy = clamp(fsm.energy, 0, 100);
+      fsm.load = clamp(fsm.load, 0, 100);
+      fsm.entropy = clamp(fsm.entropy, 0, 100);
+      fsm.energyLevel = clamp(fsm.energyLevel, 0, 1);
+      fsm.turbulence = clamp(fsm.turbulence, 0.08, 0.95);
+      fsm.particleDensity = clamp(fsm.particleDensity, 0.2, 0.95);
+
+      if (fsm.state === 'CRITICAL' && fsm.energy > 32 && fsm.load < 52) {
+        fsm.state = 'RESONATING';
+      }
+
+      if (shadowMemory.deferred.length > PATALIMOKKHA_CODE.maxDeferredItems) {
+        shadowMemory.deferred.splice(0, shadowMemory.deferred.length - PATALIMOKKHA_CODE.maxDeferredItems);
+        shadowMemory.debrisCleanups += 1;
+      }
+    }
+
+    function harmonyCheck(transcript) {
+      const normalized = transcript.toLowerCase();
+      const toxicSignals = /(flood|spam|ddos|loop forever|noise burst)/.test(normalized);
+      const coherence = clamp((transcript.trim().length / 180) + (toxicSignals ? -0.6 : 0.4), 0, 1);
+      return { coherence, toxicSignals };
+    }
+
+    function evaluateCognitiveROI(intent) {
+      const intentWeight = metabolicWeights[intent.intent_category] ?? 0.55;
+      const loadPressure = (fsm.load / 100) * 0.8;
+      const entropyPressure = (fsm.entropy / 100) * 0.5;
+      const gain = (intent.energy_level * 0.7) + Math.max(0, intent.emotional_valence) * 0.3;
+      const cost = intentWeight + loadPressure + entropyPressure;
+      return Number((gain - cost).toFixed(2));
+    }
+
+    function ppalGateDecision(transcript, intent) {
+      const { coherence, toxicSignals } = harmonyCheck(transcript);
+      const roi = evaluateCognitiveROI(intent);
+
+      if (toxicSignals || coherence < 0.12) return { action: 'reject', coherence, roi };
+      if (fsm.load > PATALIMOKKHA_CODE.maxLoad || fsm.energy < PATALIMOKKHA_CODE.minEnergyForDeepReasoning) {
+        return { action: 'inhibit', coherence, roi };
+      }
+      if (fsm.entropy > PATALIMOKKHA_CODE.maxEntropyForAcceptance || roi < -0.25) {
+        return { action: 'defer', coherence, roi };
+      }
+      if (fsm.energy < 5) return { action: 'reboot', coherence, roi };
+      return { action: 'accept', coherence, roi };
+    }
+
+    function enqueueShadowMemory(packet) {
+      shadowMemory.deferred.push({
+        id: `defer-${Date.now()}`,
+        at: Date.now(),
+        packet
+      });
+      runSystemConsistencyCheck();
+    }
+
+    function consolidateShadowMemory() {
+      const now = performance.now();
+      if (shadowMemory.deferred.length === 0) return;
+      if (now - shadowMemory.lastDreamAt < 3500) return;
+      if (fsm.state !== 'IDLE' && fsm.state !== 'NIRODHA') return;
+
+      const revived = shadowMemory.deferred.shift();
+      shadowMemory.lastDreamAt = now;
+      if (revived) {
+        addBubble('system', `dream-cycle revived deferred signal (${shadowMemory.deferred.length} queued)`);
+      }
+    }
+
+    function softReboot() {
+      fsm.state = 'NIRODHA';
+      fsm.energy = Math.max(fsm.energy, 22);
+      fsm.load = clamp(fsm.load * 0.4, 0, 100);
+      fsm.entropy = clamp(fsm.entropy * 0.35, 0, 100);
+      shadowMemory.deferred = [];
+      addBubble('system', 'PPAL soft reboot executed to preserve thermal and cognitive integrity.');
+    }
+
     function evolveState() {
       if (fsm.state === 'NIRODHA') {
         fsm.energy = clamp(fsm.energy + 0.28, 0, 100);
@@ -856,6 +962,8 @@
       }
 
       if (fsm.energy <= 1) fsm.state = 'NIRODHA';
+      consolidateShadowMemory();
+      runSystemConsistencyCheck();
     }
 
 
@@ -995,6 +1103,31 @@
 
       const baseIntent = await analyzeIntentWithLLM(`${transcript} ${references.join(' ')}`.trim());
       const vector = mapIntentToVisual(baseIntent);
+      const gate = ppalGateDecision(transcript, vector);
+      refs.gateChip.textContent = `gate: ${gate.action} (roi=${gate.roi})`;
+
+      if (gate.action === 'reject') {
+        addBubble('system', `[${source}] discarded via harmony check (coherence=${gate.coherence.toFixed(2)})`);
+        return;
+      }
+
+      if (gate.action === 'defer') {
+        enqueueShadowMemory({ transcript, source, references, vector, gate });
+        addBubble('system', `[${source}] deferred to shadow memory (${shadowMemory.deferred.length} pending)`);
+        return;
+      }
+
+      if (gate.action === 'inhibit') {
+        fsm.state = 'NIRODHA';
+        addBubble('system', `[${source}] inhibited by Patimokkha policy (load=${Math.round(fsm.load)} energy=${Math.round(fsm.energy)})`);
+        return;
+      }
+
+      if (gate.action === 'reboot') {
+        softReboot();
+        return;
+      }
+
       applyIntent(vector);
       addBubble('system', `[${source}] intent=${vector.intent_category}, form=${vector.visual_parameters.base_shape}, refs=${references.length}`);
     }
@@ -1117,6 +1250,7 @@
       refs.shapeChip.textContent = `shape: ${fsm.shape}`;
       refs.intentChip.textContent = `intent: ${fsm.intentCategory}`;
       refs.qualityChip.textContent = `quality: ${fsm.qualityTier} @${fsm.targetFps}fps`;
+      refs.gateChip.textContent = refs.gateChip.textContent || 'gate: accept';
 
       refs.displayPage2State.textContent = fsm.state;
       refs.displayPage2Energy.textContent = `${Math.round(fsm.energy)}%`;
@@ -1284,6 +1418,14 @@
     renderBlueprintLock();
     renderHUD();
     requestAnimationFrame(tick);
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js').catch(() => {
+          addBubble('system', 'service worker unavailable; fallback realtime-only mode.');
+        });
+      });
+    }
   </script>
 </body>
 </html>
