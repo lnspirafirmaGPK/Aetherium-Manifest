@@ -146,7 +146,7 @@ A runnable prototype now exists in `index.html` with the interaction model reque
 
 ## Application Packaging Update (Web App / PlayStation Browser Path)
 
-มีการยกระดับหน้า interface ให้เป็นลักษณะ **installable web application** เพื่อรองรับการ deploy ในรูปแบบแอปพลิเคชันและใช้งานบน browser runtime ที่เข้มงวด (เช่นเส้นทางใช้งานผ่าน PlayStation browser):
+มีการยกระดับหน้า interface ให้เป็นลักษณะ **installable web application** พร้อมการตั้งค่า manifest, service worker และ asset แกนหลัก เพื่อรองรับการ deploy ในรูปแบบแอปพลิเคชันและใช้งานบน browser runtime ที่เข้มงวด (เช่นเส้นทางใช้งานผ่าน PlayStation browser):
 
 - เพิ่ม `app.webmanifest` (standalone display, orientation, theme)
 - เพิ่ม `service-worker.js` สำหรับ offline cache ของ asset แกนหลัก
