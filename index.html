@@ -436,6 +436,7 @@
       <div class="row-head"><span>FSM STATE</span><span id="state-text">IDLE</span></div>
       <span class="chip" id="shape-chip">shape: cloud</span>
       <span class="chip" id="intent-chip">intent: chat</span>
+      <span class="chip" id="quality-chip">quality: auto</span>
     </div>
     <div class="row">
       <div class="row-head"><span>ENERGY</span><span id="energy-text">100%</span></div>
@@ -524,7 +525,9 @@
       emotionalValence: 0,
       energyLevel: 0.2,
       desiredForm: 'abstract',
-      sourceHints: []
+      sourceHints: [],
+      qualityTier: 'auto',
+      targetFps: 60
     };
 
     const refs = {
@@ -537,6 +540,7 @@
       loadBar: document.getElementById('load-bar'),
       shapeChip: document.getElementById('shape-chip'),
       intentChip: document.getElementById('intent-chip'),
+      qualityChip: document.getElementById('quality-chip'),
       json: document.getElementById('intent-json'),
       status: document.getElementById('status'),
       compatNote: document.getElementById('compat-note'),
@@ -854,6 +858,147 @@
       if (fsm.energy <= 1) fsm.state = 'NIRODHA';
     }
 
+
+    const voicePipeline = {
+      vad: null,
+      listening: false,
+      capturedFrames: 0,
+      startedAt: 0,
+      samples: []
+    };
+
+    const INTENT_TEMPLATES = Object.freeze({
+      request_creation: {
+        intent_category: 'request_creation',
+        emotional_valence: 0.6,
+        energy_level: 0.78,
+        semantic_concepts: ['creation', 'manifest', 'lightform']
+      },
+      analysis: {
+        intent_category: 'analysis',
+        emotional_valence: 0.15,
+        energy_level: 0.48,
+        semantic_concepts: ['analysis', 'structure', 'inference']
+      },
+      error_recovery: {
+        intent_category: 'error_recovery',
+        emotional_valence: -0.5,
+        energy_level: 0.64,
+        semantic_concepts: ['repair', 'stability', 'fallback']
+      }
+    });
+
+    function detectGraphicsTier() {
+      const cores = navigator.hardwareConcurrency || 4;
+      const memory = navigator.deviceMemory || 4;
+      const lowPower = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (lowPower || cores <= 4 || memory <= 4) return 'low';
+      if (cores >= 12 && memory >= 8) return 'high';
+      return 'medium';
+    }
+
+    function applyQualityTier(tier) {
+      fsm.qualityTier = tier;
+      if (tier === 'low') {
+        fsm.targetFps = 30;
+        fsm.particleDensity = Math.min(fsm.particleDensity, 0.5);
+      } else if (tier === 'high') {
+        fsm.targetFps = 60;
+      } else {
+        fsm.targetFps = 45;
+        fsm.particleDensity = Math.min(fsm.particleDensity, 0.75);
+      }
+    }
+
+    function setFrameRateActive(isActive) {
+      if (!isActive) {
+        fsm.targetFps = Math.min(fsm.targetFps, 24);
+      } else {
+        applyQualityTier(fsm.qualityTier);
+      }
+    }
+
+    async function transcribeAudio(audioBlob) {
+      const estimatedSeconds = Number(((audioBlob.size || 4096) / 32000).toFixed(2));
+      return `[mock-stt:${estimatedSeconds}s] สร้างสภาวะแสงที่สงบและชัดเจน`;
+    }
+
+    async function analyzeIntentWithLLM(transcript) {
+      const t = transcript.toLowerCase();
+      const template = /(error|fail|critical|พัง|ผิด)/.test(t)
+        ? INTENT_TEMPLATES.error_recovery
+        : /(analy|สรุป|ตรวจ|explain|data|ข้อมูล)/.test(t)
+          ? INTENT_TEMPLATES.analysis
+          : INTENT_TEMPLATES.request_creation;
+
+      const semantic = new Set(template.semantic_concepts);
+      if (/(water|น้ำ|river|ทะเล|stream)/.test(t)) semantic.add('flow');
+      if (/(mountain|ภูเขา)/.test(t)) semantic.add('mountain');
+      if (/(face|human|ใบหน้า|มนุษย์)/.test(t)) semantic.add('human');
+
+      return {
+        ...template,
+        semantic_concepts: Array.from(semantic)
+      };
+    }
+
+    function mapIntentToVisual(intent) {
+      const concepts = intent.semantic_concepts || [];
+      let baseShape = 'sphere';
+      if (intent.intent_category === 'error_recovery') baseShape = 'cracks';
+      else if (concepts.includes('mountain')) baseShape = 'mountain';
+      else if (concepts.includes('flow')) baseShape = 'river';
+      else if (concepts.includes('human')) baseShape = 'human';
+
+      const warm = intent.emotional_valence >= 0 ? '#FFD166' : '#7FDBFF';
+
+      return {
+        intent_category: intent.intent_category,
+        emotional_valence: intent.emotional_valence,
+        energy_level: intent.energy_level,
+        semantic_concepts: concepts,
+        visual_parameters: {
+          base_shape: baseShape,
+          color_palette: warm,
+          particle_density: Number(clamp(0.32 + intent.energy_level * 0.6, 0.2, 0.95).toFixed(2)),
+          turbulence: Number(clamp(0.12 + intent.energy_level * 0.7, 0.08, 0.95).toFixed(2)),
+          flow_direction: intent.emotional_valence >= 0 ? 'upward' : 'inward'
+        }
+      };
+    }
+
+    function initializeVoiceSystem(onSpeechEnd) {
+      return {
+        start() {
+          voicePipeline.listening = true;
+          voicePipeline.startedAt = performance.now();
+          voicePipeline.capturedFrames = 0;
+          addBubble('system', 'voice listening started (VAD mock)');
+        },
+        stop() {
+          if (!voicePipeline.listening) return;
+          voicePipeline.listening = false;
+          const elapsed = Math.max(600, performance.now() - voicePipeline.startedAt);
+          const byteSize = Math.round((elapsed / 1000) * 32000);
+          const payload = new Blob([new Uint8Array(byteSize)], { type: 'audio/wav' });
+          onSpeechEnd(payload);
+        }
+      };
+    }
+
+    async function processTranscript(transcript, source = 'text') {
+      const references = await fetchReferenceSignals(transcript);
+      fsm.sourceHints = references;
+      refs.sources.textContent = references.length
+        ? `sources: ${references.join(' | ')}`
+        : 'sources: none (offline/no match)';
+
+      const baseIntent = await analyzeIntentWithLLM(`${transcript} ${references.join(' ')}`.trim());
+      const vector = mapIntentToVisual(baseIntent);
+      applyIntent(vector);
+      addBubble('system', `[${source}] intent=${vector.intent_category}, form=${vector.visual_parameters.base_shape}, refs=${references.length}`);
+    }
+
     function inferIntentVector(text) {
       const t = text.toLowerCase();
       let intentCategory = 'chat';
@@ -952,18 +1097,7 @@
     async function processUserInput(text) {
       addBubble('user', text);
       fsm.state = 'LISTENING';
-      const references = await fetchReferenceSignals(text);
-      fsm.sourceHints = references;
-      refs.sources.textContent = references.length
-        ? `sources: ${references.join(' | ')}`
-        : 'sources: none (offline/no match)';
-
-      const enriched = references.length ? `${text} ${references.join(' ')}` : text;
-      const vector = inferIntentVector(enriched);
-      applyIntent(vector);
-
-      const response = `understood intent=${vector.intent_category}, form=${vector.visual_parameters.base_shape}, refs=${references.length}`;
-      addBubble('system', response);
+      await processTranscript(text, 'text');
     }
 
     function renderHUD() {
@@ -982,6 +1116,7 @@
 
       refs.shapeChip.textContent = `shape: ${fsm.shape}`;
       refs.intentChip.textContent = `intent: ${fsm.intentCategory}`;
+      refs.qualityChip.textContent = `quality: ${fsm.qualityTier} @${fsm.targetFps}fps`;
 
       refs.displayPage2State.textContent = fsm.state;
       refs.displayPage2Energy.textContent = `${Math.round(fsm.energy)}%`;
@@ -1038,7 +1173,15 @@
       }
     }
 
+    let lastFrameAt = 0;
     function tick(t) {
+      const frameInterval = 1000 / Math.max(12, fsm.targetFps || 60);
+      if (t - lastFrameAt < frameInterval) {
+        requestAnimationFrame(tick);
+        return;
+      }
+      lastFrameAt = t;
+
       drawBackground();
       evolveState();
 
@@ -1091,8 +1234,19 @@
     document.getElementById('toggle-box-2').addEventListener('click', () => toggleMiniBox(2));
     document.getElementById('toggle-box-3').addEventListener('click', () => toggleMiniBox(3));
 
+    const voiceSystem = initializeVoiceSystem(async (audioBlob) => {
+      fsm.state = 'PROCESSING';
+      const transcript = await transcribeAudio(audioBlob);
+      addBubble('user', transcript);
+      await processTranscript(transcript, 'voice');
+    });
+
     document.getElementById('voice-btn').addEventListener('click', () => {
-      addBubble('system', 'voice input icon pressed (demo)');
+      if (voicePipeline.listening) {
+        voiceSystem.stop();
+      } else {
+        voiceSystem.start();
+      }
     });
 
     refs.chatToggle.addEventListener('click', () => {
@@ -1114,11 +1268,17 @@
       }, null, 2);
     });
 
+
+    document.addEventListener('visibilitychange', () => {
+      setFrameRateActive(!document.hidden);
+    });
+
     document.body.classList.remove('ui-open');
     document.body.classList.remove('chat-open');
     document.body.classList.remove('display-page-2');
     resize();
     detectCompatibilityMode();
+    applyQualityTier(detectGraphicsTier());
     particles = Array.from({ length: 560 }, () => new Particle());
     renderCompatFrame();
     renderBlueprintLock();
