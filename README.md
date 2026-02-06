@@ -144,6 +144,15 @@ A runnable prototype now exists in `index.html` with the interaction model reque
 - **File Intake:** PDF/image attachment buffer with inline chip preview.
 - **Freeze Light System:** floating controls for Freeze/Save/Erase/Light Pen, voice-trigger keywords (`แช่แข็ง`, `freeze`, `บันทึก`, `ลบ`, `วาด`), frozen-point editing, and export UI for PNG plus printable PDF fallback.
 
+## Application Packaging Update (Web App / PlayStation Browser Path)
+
+มีการยกระดับหน้า interface ให้เป็นลักษณะ **installable web application** เพื่อรองรับการ deploy ในรูปแบบแอปพลิเคชันและใช้งานบน browser runtime ที่เข้มงวด (เช่นเส้นทางใช้งานผ่าน PlayStation browser):
+
+- เพิ่ม `app.webmanifest` (standalone display, orientation, theme)
+- เพิ่ม `service-worker.js` สำหรับ offline cache ของ asset แกนหลัก
+- เชื่อม `<link rel="manifest">` + service-worker registration ใน `index.html`
+- เพิ่ม Internal Gate Logic (PPAL/Shadow Memory/Patimokkha policy) เพื่อตรวจสอบความสอดคล้องของระบบก่อนประมวลผล intent
+
 ### Run locally
 
 ```bash
