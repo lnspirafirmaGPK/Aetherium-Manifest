@@ -267,3 +267,11 @@ Together, they transform AI interaction from text-first tooling into a living vi
 3. สร้าง **scenario fuzzer** สำหรับ edge cases เช่น extreme jitter, burst reconnect, และ one-action collapse เพื่อยกระดับ challenge ของ Manifestation Gate.
 4. ผูก audit trail ของ normalization/cadence injection เข้ากับ release note อัตโนมัติ เพื่อให้ governance ตรวจสอบย้อนหลังได้ง่าย.
 5. เพิ่มชุดข้อมูลทดสอบแบบ edge-case library (empty samples, malformed probability vectors, cadence out-of-range) เพื่อให้ regression tests จับบั๊กได้เร็วขึ้นก่อนเข้าระบบจริง.
+
+### Data-forward adaptation ideas (ต่อยอดกับข้อมูลเพื่อเพิ่มประสิทธิภาพ/ความท้าทาย)
+
+1. ใช้ **session-bucket telemetry** (เช่น แบ่งกลุ่มตามช่วงเวลา/อุปกรณ์/ความเร็วเครือข่าย) เพื่อทำ latency calibration ที่แม่นขึ้นในแต่ละบริบท โดยไม่เก็บ identifier รายบุคคล.
+2. สร้าง **intent rarity curriculum** จาก production-anonymized events โดยเพิ่มน้ำหนักการทดสอบกับ intent ที่พบไม่บ่อย เพื่อป้องกัน performance cliff ในเคสหายาก.
+3. เติม **counterfactual probability datasets** สำหรับ IPW (distribution ที่เกือบพังแต่ยัง valid) เพื่อทดสอบความทนทานของนโยบาย normalization และ epsilon boundary.
+4. ต่อ knowledge graph เข้ากับ **creative prompt bank** (intent + light pattern + cadence) เพื่อสร้าง stress scenarios อัตโนมัติที่หลากหลายขึ้นต่อ release.
+5. เก็บ **long-horizon replay packs** (event log ยาวหลายพัน tick) เพื่อวัด lockstep stability ระยะยาว และตรวจจับ drift ที่ไม่โผล่ในเทสสั้น.
