@@ -231,3 +231,39 @@ Together, they transform AI interaction from text-first tooling into a living vi
 3. ทำ latency perception benchmark แยกจาก raw RTT เพื่อวัดผลตามเป้าหมาย GunUI จริง
 4. เพิ่ม “creative stress scenarios” เช่น high-emotion burst / rapid intent switching เพื่อทดสอบ Manifestation Gate ว่าไม่ spam และไม่โกหก state
 5. สร้าง knowledge graph ของ intent-to-light mapping จากข้อมูล production anonymized เพื่อปรับ calibration ให้แม่นขึ้นโดยไม่ละเมิด privacy
+
+## Runtime Validation & Calibration Expansion (PR Guardrails)
+
+เพิ่มชุดงานสำหรับยกระดับคุณภาพก่อน merge ทุก PR และต่อยอดการคาลิเบรตเชิง perception:
+
+- **Contract-checker CI:** เพิ่ม workflow `.github/workflows/contract-and-runtime-checks.yml` ให้รันบน `pull_request` เพื่อ validate payload จริงกับ schema ทั้ง `akashic_envelope_v2`, `embodiment_v1`, `ipw_v1` ผ่าน `tools/contracts/contract_checker.py`.
+- **Deterministic replay harness:** เพิ่ม `api_gateway/deterministic_replay.py` รองรับ `seed + event log` เพื่อตรวจ lockstep consistency ระหว่างหลายโหนด (state hash ต้องตรงกัน).
+- **Latency perception benchmark:** เพิ่ม `tools/benchmarks/latency_perception_benchmark.py` แยกการวัดผล `perceived latency` ออกจาก `raw RTT` เพื่อวัดตามเป้าหมาย GunUI ที่สะท้อนประสบการณ์ผู้ใช้จริง.
+- **Creative stress scenarios:** เพิ่ม `tools/benchmarks/creative_stress_scenarios.py` สำหรับกรณี `high-emotion burst` และ `rapid intent switching` เพื่อตรวจ Manifestation Gate ว่าไม่ spam และไม่โกหก state.
+- **Intent-to-light knowledge graph (privacy-preserving):** เพิ่ม `tools/benchmarks/intent_light_knowledge_graph.py` เพื่อสร้างกราฟคาลิเบรตจาก production data แบบ anonymized พร้อม k-anonymity threshold.
+
+### Suggested next extensions (for higher performance + creative challenge)
+
+1. เพิ่ม online calibration loop โดย feed edge weights จาก knowledge graph กลับเข้า runtime mapping แบบรายสัปดาห์ พร้อม drift alert เมื่อ mapping เปลี่ยนเกิน threshold.
+2. เพิ่ม synthetic adversarial stream generator (เช่น intent oscillation 20Hz) เพื่อ stress-test gate และ benchmark stability envelope.
+3. เก็บ perceptual telemetry แบบ privacy-safe (aggregated buckets, no raw text/session IDs) เพื่อเชื่อม metric “felt latency” เข้ากับ release gates ใน CI/CD.
+4. ใช้ multi-objective tuning (latency, coherence, truthfulness) สำหรับ auto-calibration เพื่อเลี่ยง optimize เฉพาะ RTT อย่างเดียว.
+
+## Contract Hardening Update (Cadence + Probability Distribution)
+
+อัปเดตเพิ่มเติมเพื่อแก้จุดเสี่ยงจากรีวิวล่าสุดให้พร้อมใช้งานใน PR gate จริง:
+
+- ค่าแนะนำการใช้งาน: `python tools/contracts/contract_checker.py --strict` สำหรับ CI และ `python tools/contracts/contract_checker.py --legacy` สำหรับ compatibility migration.
+
+- เพิ่ม `visual_manifestation.cadence` ใน `embodiment_v1` พร้อมเงื่อนไข `bpm(20-240), phase(0-1), jitter(0-1)` เพื่อคุมจังหวะแสง/แอนิเมชันไม่ให้ drift.
+- แยกโหมด contract checker ชัดเจน: **Strict mode (CI/PR gate)** ต้องมี cadence มิฉะนั้น fail ทันที, และ **Legacy mode (runtime/migration)** อนุญาต deterministic cadence injection ตาม phase (`nirodha`, `awakened`, `processing`) พร้อม audit log.
+- เพิ่ม `probability_policy` ใน `ipw_v1` เพื่อบังคับ semantics ว่า `predictions[].p` ต้องเป็น probability mass จริง (ไม่ใช่ confidence ลอย ๆ).
+- เพิ่ม runtime validation ของผลรวมความน่าจะเป็น (`sum(p)`) พร้อม `epsilon` และ policy `on_violation` (`error` หรือ `normalize`) โดยเมื่อ normalize จะมี audit key เช่น `ipw_validation.audit.normalized=true` และ `ipw_validation.audit.original_sum=...`.
+
+### Suggested next extensions (performance + creative challenge)
+
+1. ต่อ knowledge graph ให้เป็น **phase-aware cadence recommender** (intent + context → cadence profile) เพื่อจูน rhythm แบบ adaptive โดยยังคง deterministic fallback.
+2. เพิ่ม **probability drift dashboard** (เช่น KL divergence ของ IPW distribution ราย build) เพื่อจับ quality regression ก่อนขึ้น production.
+3. สร้าง **scenario fuzzer** สำหรับ edge cases เช่น extreme jitter, burst reconnect, และ one-action collapse เพื่อยกระดับ challenge ของ Manifestation Gate.
+4. ผูก audit trail ของ normalization/cadence injection เข้ากับ release note อัตโนมัติ เพื่อให้ governance ตรวจสอบย้อนหลังได้ง่าย.
+5. เพิ่มชุดข้อมูลทดสอบแบบ edge-case library (empty samples, malformed probability vectors, cadence out-of-range) เพื่อให้ regression tests จับบั๊กได้เร็วขึ้นก่อนเข้าระบบจริง.

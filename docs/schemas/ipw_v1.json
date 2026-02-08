@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "IntentProbabilityWaveV1",
   "type": "object",
-  "required": ["ipw_type", "predictions", "collapse_threshold", "evidence"],
+  "required": ["ipw_type", "predictions", "collapse_threshold", "evidence", "probability_policy"],
   "properties": {
     "ipw_type": {
       "type": "string",
@@ -25,6 +25,16 @@
       "type": "number",
       "minimum": 0,
       "maximum": 1
+    },
+    "probability_policy": {
+      "type": "object",
+      "required": ["requires_normalization", "epsilon", "on_violation"],
+      "properties": {
+        "requires_normalization": { "type": "boolean" },
+        "epsilon": { "type": "number", "minimum": 0, "maximum": 0.01 },
+        "on_violation": { "type": "string", "enum": ["error", "normalize"] }
+      },
+      "additionalProperties": false
     },
     "evidence": {
       "type": "object",

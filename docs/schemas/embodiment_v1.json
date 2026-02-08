@@ -54,12 +54,22 @@
     },
     "visual_manifestation": {
       "type": "object",
-      "required": ["core_shape", "particle_velocity", "turbulence", "chromatic_aberration"],
+      "required": ["core_shape", "particle_velocity", "turbulence", "chromatic_aberration", "cadence"],
       "properties": {
         "core_shape": { "type": "string" },
         "particle_velocity": { "type": "number" },
         "turbulence": { "type": "number" },
-        "chromatic_aberration": { "type": "number" }
+        "chromatic_aberration": { "type": "number" },
+        "cadence": {
+          "type": "object",
+          "required": ["bpm", "phase", "jitter"],
+          "properties": {
+            "bpm": { "type": "number", "minimum": 20, "maximum": 240 },
+            "phase": { "type": "number", "minimum": 0, "maximum": 1 },
+            "jitter": { "type": "number", "minimum": 0, "maximum": 1 }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": true
     }
