@@ -1,28 +1,70 @@
 # AGNS Cognitive DSL API Gateway
 
-เอกสารและโค้ดตัวอย่างสำหรับระบบรับ Cognitive DSL จากโมเดลภายนอก (OpenAI / Anthropic / Google / Custom)
+## English
 
-## Endpoints
+Sample gateway for receiving Cognitive DSL payloads from external model providers.
 
+### Endpoints
 - `POST /api/v1/cognitive/emit`
 - `POST /api/v1/cognitive/validate`
 - `GET /health`
 - `WS /ws/cognitive-stream`
 
-## Header Requirements
-
+### Required Headers
 - `X-API-Key`
-- `X-Model-Provider` (เฉพาะ emit)
-- `X-Model-Version` (เฉพาะ emit)
+- `X-Model-Provider` (emit only)
+- `X-Model-Version` (emit only)
 
-## ตัวอย่างรัน
-
+### Run
 ```bash
 uvicorn api_gateway.main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
-## ตัวอย่างทดสอบ
+### Validate Example
+```bash
+curl -X POST http://localhost:8080/api/v1/cognitive/validate \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: demo-key" \
+  -d @api_gateway/sample_emit_payload.json
+```
 
+### AetherBusExtreme Utilities
+Low-latency helper module: `api_gateway/aetherbus_extreme.py`
+- Zero-copy send
+- Immutable envelope models
+- Async queue bus with backpressure
+- MsgPack serialization helpers
+- NATS async publisher manager
+- Deterministic state convergence processor
+
+Test command:
+```bash
+python -m unittest api_gateway/test_aetherbus_extreme.py
+```
+
+---
+
+## ภาษาไทย
+
+Gateway ตัวอย่างสำหรับรับ Cognitive DSL จากผู้ให้บริการโมเดลภายนอก
+
+### Endpoint
+- `POST /api/v1/cognitive/emit`
+- `POST /api/v1/cognitive/validate`
+- `GET /health`
+- `WS /ws/cognitive-stream`
+
+### Header ที่ต้องมี
+- `X-API-Key`
+- `X-Model-Provider` (เฉพาะ emit)
+- `X-Model-Version` (เฉพาะ emit)
+
+### การรัน
+```bash
+uvicorn api_gateway.main:app --host 0.0.0.0 --port 8080 --reload
+```
+
+### ทดสอบ validate
 ```bash
 curl -X POST http://localhost:8080/api/v1/cognitive/validate \
   -H "Content-Type: application/json" \

@@ -85,17 +85,18 @@
 
     #settings-toggle {
       position: fixed;
-      right: 18px;
-      top: 16px;
+      left: 18px;
+      bottom: 18px;
       z-index: 40;
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       border-radius: 999px;
       border: 1px solid var(--line);
-      background: rgba(8, 8, 10, 0.78);
+      background: rgba(8, 8, 10, 0.88);
       color: #fff;
       cursor: pointer;
       font-size: 18px;
+      box-shadow: 0 12px 20px rgba(0,0,0,.38);
     }
 
     #chat-toggle {
@@ -116,8 +117,8 @@
 
     #settings-panel {
       position: fixed;
-      right: 68px;
-      top: 16px;
+      left: 68px;
+      bottom: 16px;
       z-index: 42;
       width: min(320px, calc(100vw - 24px));
       padding: 12px;
@@ -133,6 +134,82 @@
       margin-bottom: 8px;
       font-weight: 700;
     }
+
+    .window {
+      resize: both;
+      overflow: auto;
+      min-width: 260px;
+      min-height: 120px;
+      max-width: min(92vw, 920px);
+      max-height: 88vh;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: -6px -6px 8px;
+      padding: 6px 6px 8px;
+      border-bottom: 1px dashed rgba(255,255,255,.18);
+      cursor: grab;
+      user-select: none;
+    }
+
+    .panel-header:active {
+      cursor: grabbing;
+    }
+
+    .panel-title {
+      font-size: 11px;
+      letter-spacing: .4px;
+      color: #c7e9ff;
+    }
+
+    .panel-close {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.06);
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .setting-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.06);
+      color: #fff;
+      padding: 6px;
+      cursor: pointer;
+      font-size: 10px;
+    }
+
+    .tab-btn.active { border-color: rgba(0,255,255,.8); color: #b8ffff; }
+
+    .settings-tab { display: none; margin-top: 8px; }
+    .settings-tab.active { display: block; }
+
+    #external-url {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(255,255,255,.06);
+      color: #fff;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 12px;
+      margin: 6px 0;
+    }
+
 
     .setting-group { margin-top: 10px; }
 
@@ -279,14 +356,6 @@
       color: #dce9ff;
     }
 
-    body:not(.ui-open) #status,
-    body:not(.ui-open) #log,
-    body:not(.ui-open) #conversation,
-    body:not(.ui-open) #compat,
-    body:not(.ui-open) #blueprint {
-      display: none;
-    }
-
     #composer {
       transition: transform .28s ease, opacity .28s ease;
     }
@@ -317,6 +386,54 @@
       padding: 10px 12px;
       cursor: pointer;
       font-family: inherit;
+      transition: transform .16s ease, box-shadow .2s ease, background-color .2s ease;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid rgba(0,255,255,.8);
+      outline-offset: 2px;
+    }
+
+    .btn.touch-pulse {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 8px rgba(0,255,255,.12);
+    }
+
+    #voice-btn {
+      min-width: 44px;
+      position: relative;
+    }
+
+    #voice-btn.voice-active {
+      background: rgba(0,255,255,.2);
+      border-color: rgba(0,255,255,.7);
+      color: #b8ffff;
+      box-shadow: 0 0 18px rgba(0,255,255,.35);
+      animation: micPulse 1.2s infinite;
+    }
+
+    #voice-btn.voice-blocked {
+      background: rgba(220,20,60,.2);
+      border-color: rgba(220,20,60,.7);
+      color: #ffd0d9;
+    }
+
+    #voice-status {
+      font-size: 11px;
+      color: #9fd4ff;
+      min-width: 104px;
+      text-align: center;
+    }
+
+    .control-strip {
+      display: inline-flex;
+      gap: 6px;
+    }
+
+    @keyframes micPulse {
+      0% { box-shadow: 0 0 0 0 rgba(0,255,255,.36); }
+      70% { box-shadow: 0 0 0 12px rgba(0,255,255,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,255,255,0); }
     }
 
     .chip {
@@ -412,9 +529,17 @@
   <button id="settings-toggle" aria-label="toggle settings">⚙</button>
   <button id="chat-toggle" aria-label="toggle chat">Chat</button>
 
-  <aside class="hud" id="settings-panel">
+  <aside class="hud window" id="settings-panel" data-window-key="settings">
     <div class="settings-title">SETTINGS</div>
-    <div class="setting-group">
+    <div class="setting-tabs" id="settings-tabs">
+      <button class="tab-btn active" data-tab="display" type="button">Display</button>
+      <button class="tab-btn" data-tab="panels" type="button">Panels</button>
+      <button class="tab-btn" data-tab="links" type="button">Links</button>
+      <button class="tab-btn" data-tab="language" type="button">Language</button>
+      <button class="tab-btn" data-tab="voice" type="button">Voice</button>
+    </div>
+
+    <div class="settings-tab active" data-tab-content="display">
       <div class="setting-row">
         <span>Display Page</span>
         <div class="seg" id="display-selector">
@@ -422,15 +547,66 @@
           <button type="button" data-page="2">Page 2</button>
         </div>
       </div>
+      <div class="setting-row"><span>Mini Box #1</span><button class="btn" id="toggle-box-1" type="button">Toggle</button></div>
+      <div class="setting-row"><span>Mini Box #2</span><button class="btn" id="toggle-box-2" type="button">Toggle</button></div>
+      <div class="setting-row"><span>Mini Box #3</span><button class="btn" id="toggle-box-3" type="button">Toggle</button></div>
     </div>
-    <div class="setting-group">
-      <div class="setting-row"><span>Mini Box #1</span><button class="btn" id="toggle-box-1">Toggle</button></div>
-      <div class="setting-row"><span>Mini Box #2</span><button class="btn" id="toggle-box-2">Toggle</button></div>
-      <div class="setting-row"><span>Mini Box #3</span><button class="btn" id="toggle-box-3">Toggle</button></div>
+
+    <div class="settings-tab" data-tab-content="panels">
+      <div class="setting-row"><label><input type="checkbox" class="panel-toggle" data-target="status" checked /> Status</label></div>
+      <div class="setting-row"><label><input type="checkbox" class="panel-toggle" data-target="log" checked /> Intent Log</label></div>
+      <div class="setting-row"><label><input type="checkbox" class="panel-toggle" data-target="conversation" checked /> Conversation</label></div>
+      <div class="setting-row"><label><input type="checkbox" class="panel-toggle" data-target="composer" checked /> Composer</label></div>
+      <div class="setting-row"><label><input type="checkbox" class="panel-toggle" data-target="blueprint" checked /> Blueprint</label></div>
+      <div class="setting-row"><label><input type="checkbox" class="panel-toggle" data-target="compat" checked /> Compatibility</label></div>
+    </div>
+
+    <div class="settings-tab" data-tab-content="links">
+      <label for="external-url">External URL</label>
+      <input id="external-url" type="url" placeholder="https://example.com/article" />
+      <button class="btn" id="analyze-url-btn" type="button">Analyze URL</button>
+      <div id="url-status" style="margin-top:6px;font-size:11px;color:#9fd4ff;">status: idle</div>
+    </div>
+
+    <div class="settings-tab" data-tab-content="language">
+      <div class="setting-row">
+        <label for="display-language">Display Language</label>
+        <select id="display-language" class="btn">
+          <option value="th">Thai</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+          <option value="es">Español</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label for="understanding-language">AI Understanding</label>
+        <select id="understanding-language" class="btn">
+          <option value="auto">Auto detect</option>
+          <option value="th-TH">Thai</option>
+          <option value="en-US">English</option>
+          <option value="ja-JP">Japanese</option>
+          <option value="es-ES">Spanish</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-tab" data-tab-content="voice">
+      <div class="setting-row">
+        <label for="voice-mode">Voice Mode</label>
+        <select id="voice-mode" class="btn">
+          <option value="standard">Standard</option>
+          <option value="enhanced">Enhanced</option>
+          <option value="thai-fallback">Thai fallback</option>
+          <option value="regional">Regional</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label><input type="checkbox" id="voice-telemetry" checked /> Enable telemetry</label>
+      </div>
     </div>
   </aside>
 
-  <aside class="hud" id="status">
+  <aside class="hud window" id="status" data-window-key="status">
     <div class="row"><strong>AETHERBUS / GUNUI STATUS</strong></div>
     <div class="row">
       <div class="row-head"><span>FSM STATE</span><span id="state-text">IDLE</span></div>
@@ -452,30 +628,37 @@
     </div>
   </aside>
 
-  <aside class="hud" id="log"><pre id="intent-json">Intent Vector จะปรากฏที่นี่...</pre></aside>
+  <aside class="hud window" id="log" data-window-key="log"><pre id="intent-json">Intent vector will appear here...</pre></aside>
 
-  <aside class="hud" id="conversation">
+  <aside class="hud window" id="conversation" data-window-key="conversation">
     <div><strong>CONVERSATION CONTEXT</strong></div>
     <div id="chat-stream"></div>
     <div id="sources">sources: none</div>
   </aside>
 
-  <section class="hud" id="composer">
-    <input id="intent-input" placeholder="พิมพ์ intent เช่น: ด่วน! สรุปข้อมูลให้หน่อย หรือ I feel confused and tired" />
-    <button class="btn" id="voice-btn" title="Voice chat" aria-label="voice chat">🎤</button>
-    <button class="btn" id="send-btn">Emit Intent</button>
-    <button class="btn" id="nirodha-btn">Nirodha</button>
+  <section class="hud window" id="composer" data-window-key="composer">
+    <input id="intent-input" placeholder="Type an intent, e.g. urgent summary request or I feel confused and tired" />
+    <button class="btn" id="voice-btn" type="button" title="Voice chat" aria-label="voice chat" aria-pressed="false">🎤</button>
+    <span id="voice-status" aria-live="polite">voice: idle</span>
+    <button class="btn" id="send-btn" type="button">Emit Intent</button>
+    <button class="btn" id="nirodha-btn" type="button">Nirodha</button>
+    <div class="control-strip" role="group" aria-label="freeze and export controls">
+      <button class="btn" id="freeze-btn" type="button" aria-label="Freeze screen">Freeze</button>
+      <button class="btn" id="draw-btn" type="button" aria-label="Draw mode">Draw</button>
+      <button class="btn" id="save-btn" type="button" aria-label="Save snapshot PDF">Save</button>
+      <button class="btn" id="erase-btn" type="button" aria-label="Erase all traces">Erase</button>
+    </div>
   </section>
 
 
 
-  <aside class="hud" id="blueprint">
+  <aside class="hud window" id="blueprint" data-window-key="blueprint">
     <div><strong>BLUEPRINT OF LIVING LIGHT</strong><span class="lock-badge">LOCKED AXIS</span></div>
     <div class="blueprint-meta" id="blueprint-meta"></div>
     <ul class="blueprint-list" id="blueprint-list"></ul>
   </aside>
 
-  <aside class="hud" id="compat">
+  <aside class="hud window" id="compat" data-window-key="compat">
     <div><strong>COMPATIBILITY RENDER</strong></div>
     <div class="compat-note" id="compat-note">mode: realtime</div>
     <img id="compat-frame" alt="compatibility-frame" />
@@ -484,7 +667,7 @@
   <section id="display-page-2" aria-label="display page two">
     <div class="display2-card">
       <div><strong>DISPLAY PAGE 2</strong></div>
-      <div style="margin-top:6px;color:#b8daff;font-size:12px;">หน้านี้เป็นโหมดแสดงผลเพิ่มเติม โดยยังคงใช้ความสามารถระบบเดิมทั้งหมด</div>
+      <div style="margin-top:6px;color:#b8daff;font-size:12px;">This page is an auxiliary display mode that preserves all core system capabilities.</div>
       <div class="display2-grid">
         <div class="display2-cell">State: <span id="page2-state">IDLE</span></div>
         <div class="display2-cell">Energy: <span id="page2-energy">100%</span></div>
@@ -499,6 +682,7 @@
     <div class="mini-box" id="mini-box-3">Mini Box 3 : Source Signals</div>
   </section>
 
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script>
     const canvas = document.getElementById('nervous-system');
     const ctx = canvas.getContext('2d');
@@ -553,9 +737,158 @@
       displayPage2Energy: document.getElementById('page2-energy'),
       displayPage2Entropy: document.getElementById('page2-entropy'),
       blueprintMeta: document.getElementById('blueprint-meta'),
-      blueprintList: document.getElementById('blueprint-list')
+      blueprintList: document.getElementById('blueprint-list'),
+      voiceButton: document.getElementById('voice-btn'),
+      voiceStatus: document.getElementById('voice-status'),
+      tabs: Array.from(document.querySelectorAll('.tab-btn')),
+      tabContents: Array.from(document.querySelectorAll('.settings-tab')),
+      panelToggles: Array.from(document.querySelectorAll('.panel-toggle')),
+      analyzeUrlBtn: document.getElementById('analyze-url-btn'),
+      externalUrl: document.getElementById('external-url'),
+      urlStatus: document.getElementById('url-status'),
+      displayLanguage: document.getElementById('display-language'),
+      understandingLanguage: document.getElementById('understanding-language'),
+      voiceMode: document.getElementById('voice-mode'),
+      voiceTelemetry: document.getElementById('voice-telemetry')
     };
 
+    const panelRegistry = {
+      settings: document.getElementById('settings-panel'),
+      status: document.getElementById('status'),
+      log: document.getElementById('log'),
+      conversation: document.getElementById('conversation'),
+      composer: document.getElementById('composer'),
+      blueprint: document.getElementById('blueprint'),
+      compat: document.getElementById('compat')
+    };
+
+    const telemetry = {
+      urlAnalyses: 0,
+      voiceCommands: 0,
+      panelClosed: 0,
+      languageChanges: 0,
+      events: []
+    };
+
+    const commandBus = (() => {
+      const listeners = new Map();
+      return {
+        on(eventName, handler) {
+          if (!listeners.has(eventName)) listeners.set(eventName, new Set());
+          listeners.get(eventName).add(handler);
+        },
+        emit(eventName, payload = {}) {
+          telemetry.events.push({ eventName, at: Date.now(), payload });
+          if (telemetry.events.length > 200) telemetry.events.shift();
+          const handlers = listeners.get(eventName) || [];
+          handlers.forEach(handler => handler(payload));
+        }
+      };
+    })();
+
+    const runtimeConfig = {
+      displayLanguage: 'th',
+      understandingLanguage: 'auto',
+      voiceMode: 'standard',
+      deltaStateEnabled: true
+    };
+
+    function applyDeltaState(target, delta) {
+      if (!runtimeConfig.deltaStateEnabled) return;
+      Object.entries(delta).forEach(([key, value]) => {
+        target[key] = value;
+      });
+      commandBus.emit('state:delta', { keys: Object.keys(delta) });
+    }
+
+    function setPanelVisibility(panelKey, visible) {
+      const panel = panelRegistry[panelKey];
+      if (!panel) return;
+      panel.style.display = visible ? '' : 'none';
+      const toggle = refs.panelToggles.find(item => item.dataset.target === panelKey);
+      if (toggle) toggle.checked = visible;
+      if (!visible) telemetry.panelClosed += 1;
+    }
+
+    function initializeSettingTabs() {
+      refs.tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          refs.tabs.forEach(btn => btn.classList.toggle('active', btn === tab));
+          refs.tabContents.forEach(content => {
+            content.classList.toggle('active', content.dataset.tabContent === tab.dataset.tab);
+          });
+        });
+      });
+    }
+
+    function makePanelDraggable(panel) {
+      const header = panel.querySelector('.panel-header');
+      if (!header) return;
+      let dragging = false;
+      let offsetX = 0;
+      let offsetY = 0;
+      header.addEventListener('pointerdown', event => {
+        dragging = true;
+        panel.setPointerCapture(event.pointerId);
+        offsetX = event.clientX - panel.offsetLeft;
+        offsetY = event.clientY - panel.offsetTop;
+        panel.style.right = 'auto';
+        panel.style.bottom = 'auto';
+      });
+      header.addEventListener('pointermove', event => {
+        if (!dragging) return;
+        panel.style.left = `${Math.max(0, event.clientX - offsetX)}px`;
+        panel.style.top = `${Math.max(0, event.clientY - offsetY)}px`;
+      });
+      header.addEventListener('pointerup', event => {
+        dragging = false;
+        panel.releasePointerCapture(event.pointerId);
+      });
+    }
+
+    function addPanelChrome() {
+      Object.entries(panelRegistry).forEach(([key, panel]) => {
+        if (!panel) return;
+        const title = key.toUpperCase();
+        const header = document.createElement('div');
+        header.className = 'panel-header';
+        header.innerHTML = `<span class="panel-title">${title}</span><button class="panel-close" type="button" aria-label="close ${title}">✕</button>`;
+        panel.prepend(header);
+        header.querySelector('.panel-close').addEventListener('click', () => setPanelVisibility(key, false));
+        makePanelDraggable(panel);
+      });
+    }
+
+    function translateUi(lang) {
+      runtimeConfig.displayLanguage = lang;
+      telemetry.languageChanges += 1;
+      commandBus.emit('ui:language', { lang });
+      const map = {
+        th: { chat: 'Chat', emit: 'Emit Intent' },
+        en: { chat: 'Chat', emit: 'Emit Intent' },
+        ja: { chat: 'チャット', emit: '送信' },
+        es: { chat: 'Chat', emit: 'Emitir' }
+      };
+      const t = map[lang] || map.en;
+      refs.chatToggle.textContent = t.chat;
+      document.getElementById('send-btn').textContent = t.emit;
+    }
+
+    async function analyzeExternalUrl(url) {
+      refs.urlStatus.textContent = 'status: loading...';
+      try {
+        const response = await fetch(url);
+        const text = await response.text();
+        const snippet = text.replace(/\s+/g, ' ').slice(0, 450);
+        telemetry.urlAnalyses += 1;
+        refs.urlStatus.textContent = 'status: analyzed';
+        commandBus.emit('url:analyzed', { url, size: text.length });
+        await processTranscript(`URL_ANALYSIS ${snippet}`, 'url');
+      } catch (error) {
+        refs.urlStatus.textContent = 'status: failed (CORS/network)';
+        addBubble('system', `url analysis failed: ${error.message}`);
+      }
+    }
 
 
     const AETHERIUM_BLUEPRINT = Object.freeze({
@@ -563,11 +896,11 @@
       version: 'v1.0.0-locked',
       lockId: 'akashic-axis-001',
       core: Object.freeze([
-        'Dualism: Inspira (เจตจำนง) + Firma (โครงสร้าง)',
-        'PanGenesis: Git เป็น Akashic Record',
-        'ALO JIT: ขับเคลื่อนด้วย Pure Intent',
-        'Intent-to-Particle Flux: เจตนา -> สนามแรง -> แสงมีชีวิต',
-        'Metabolic Transparency: สี/ความสว่างสะท้อนพลังงานระบบ'
+        'Dualism: Inspira (will) + Firma (structure)',
+        'PanGenesis: Git as an Akashic Record',
+        'ALO JIT: driven by pure intent',
+        'Intent-to-Particle Flux: intent -> force field -> living light',
+        'Metabolic Transparency: color/luminance reflect system energy'
       ])
     });
 
@@ -831,6 +1164,11 @@
     }
 
     function evolveState() {
+      if (drawSettings.frozen) {
+        fsm.state = 'NIRODHA';
+        return;
+      }
+
       if (fsm.state === 'NIRODHA') {
         fsm.energy = clamp(fsm.energy + 0.28, 0, 100);
         fsm.load = clamp(fsm.load - 0.18, 0, 100);
@@ -864,8 +1202,158 @@
       listening: false,
       capturedFrames: 0,
       startedAt: 0,
-      samples: []
+      samples: [],
+      speechRecognition: null,
+      commandActive: false,
+      commandSupported: false
     };
+
+    const drawSettings = {
+      penColor: '#ffffff',
+      softMode: false,
+      frozen: false
+    };
+
+    const timeline = [];
+
+    function triggerTouchFeedback(element) {
+      if (!element) return;
+      element.classList.remove('touch-pulse');
+      void element.offsetWidth;
+      element.classList.add('touch-pulse');
+      setTimeout(() => element.classList.remove('touch-pulse'), 180);
+    }
+
+    function setVoiceIndicator(mode, message) {
+      refs.voiceButton.classList.toggle('voice-active', mode === 'active');
+      refs.voiceButton.classList.toggle('voice-blocked', mode === 'blocked');
+      refs.voiceButton.setAttribute('aria-pressed', String(mode === 'active'));
+      refs.voiceStatus.textContent = `voice: ${message}`;
+    }
+
+    function markTimeline(action) {
+      timeline.push({ at: Date.now(), action });
+      if (timeline.length > 120) timeline.shift();
+    }
+
+    function setFreezeMode(nextFrozen) {
+      drawSettings.frozen = nextFrozen;
+      if (drawSettings.frozen) {
+        fsm.state = 'NIRODHA';
+        addBubble('system', 'freeze mode enabled');
+      } else {
+        fsm.state = 'IDLE';
+        addBubble('system', 'draw mode resumed');
+      }
+      markTimeline(drawSettings.frozen ? 'freeze' : 'draw');
+    }
+
+    function eraseAll() {
+      refs.chatStream.innerHTML = '';
+      refs.sources.textContent = 'sources: none';
+      refs.json.textContent = 'Intent vector will appear here...';
+      fsm.energy = 100;
+      fsm.entropy = 8;
+      fsm.load = 5;
+      fsm.state = 'IDLE';
+      addBubble('system', 'all traces cleared');
+      markTimeline('erase');
+    }
+
+    function revertLastAction() {
+      const latest = timeline.pop();
+      addBubble('system', latest ? `reverted: ${latest.action}` : 'no action to revert');
+    }
+
+    async function exportToPDF() {
+      const jsPDF = window.jspdf && window.jspdf.jsPDF;
+      if (!jsPDF) {
+        addBubble('system', 'pdf export unavailable (jsPDF not loaded)');
+        return;
+      }
+
+      const imageData = canvas.toDataURL('image/png');
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      const w = doc.internal.pageSize.getWidth();
+      const h = doc.internal.pageSize.getHeight();
+      doc.setFillColor(5, 5, 8);
+      doc.rect(0, 0, w, h, 'F');
+      doc.addImage(imageData, 'PNG', 18, 18, w - 36, h - 36, undefined, 'FAST');
+
+      const blob = doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `aetherium-snapshot-${Date.now()}.pdf`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      addBubble('system', 'snapshot exported to PDF');
+      markTimeline('save');
+    }
+
+    function setupVoiceCommands(commands) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        setVoiceIndicator('blocked', 'unsupported');
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = runtimeConfig.understandingLanguage === 'auto' ? 'en-US' : runtimeConfig.understandingLanguage;
+      recognition.continuous = true;
+      recognition.interimResults = false;
+
+      recognition.onresult = event => {
+        const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+        addBubble('system', `voice command: ${transcript}`);
+        if (refs.voiceTelemetry.checked) telemetry.voiceCommands += 1;
+        commandBus.emit('voice:command', { transcript });
+        Object.entries(commands).forEach(([keyword, action]) => {
+          if (transcript.includes(keyword)) action();
+        });
+      };
+
+      recognition.onstart = () => {
+        voicePipeline.commandActive = true;
+        setVoiceIndicator('active', 'listening');
+      };
+
+      recognition.onend = () => {
+        if (voicePipeline.commandActive) {
+          recognition.start();
+          return;
+        }
+        setVoiceIndicator('idle', 'idle');
+      };
+
+      recognition.onerror = () => {
+        setVoiceIndicator('blocked', 'blocked');
+      };
+
+      voicePipeline.speechRecognition = recognition;
+      voicePipeline.commandSupported = true;
+      setVoiceIndicator('idle', 'ready');
+    }
+
+    function startVoiceSystem() {
+      if (!voicePipeline.commandSupported || !voicePipeline.speechRecognition) return;
+      try {
+        if (runtimeConfig.voiceMode === 'thai-fallback' && runtimeConfig.understandingLanguage === 'auto') {
+          voicePipeline.speechRecognition.lang = 'th-TH';
+        }
+        voicePipeline.commandActive = true;
+        voicePipeline.speechRecognition.start();
+      } catch (_) {
+        setVoiceIndicator('blocked', 'already on');
+      }
+    }
+
+    function stopVoiceSystem() {
+      if (!voicePipeline.speechRecognition) return;
+      voicePipeline.commandActive = false;
+      voicePipeline.speechRecognition.stop();
+      setVoiceIndicator('idle', 'idle');
+    }
 
     const INTENT_TEMPLATES = Object.freeze({
       request_creation: {
@@ -920,21 +1408,21 @@
 
     async function transcribeAudio(audioBlob) {
       const estimatedSeconds = Number(((audioBlob.size || 4096) / 32000).toFixed(2));
-      return `[mock-stt:${estimatedSeconds}s] สร้างสภาวะแสงที่สงบและชัดเจน`;
+      return `[mock-stt:${estimatedSeconds}s] build a calm and clear light-state`;
     }
 
     async function analyzeIntentWithLLM(transcript) {
       const t = transcript.toLowerCase();
-      const template = /(error|fail|critical|พัง|ผิด)/.test(t)
+      const template = /(error|fail|critical)/.test(t)
         ? INTENT_TEMPLATES.error_recovery
-        : /(analy|สรุป|ตรวจ|explain|data|ข้อมูล)/.test(t)
+        : /(analy|summar|inspect|explain|data)/.test(t)
           ? INTENT_TEMPLATES.analysis
           : INTENT_TEMPLATES.request_creation;
 
       const semantic = new Set(template.semantic_concepts);
-      if (/(water|น้ำ|river|ทะเล|stream)/.test(t)) semantic.add('flow');
-      if (/(mountain|ภูเขา)/.test(t)) semantic.add('mountain');
-      if (/(face|human|ใบหน้า|มนุษย์)/.test(t)) semantic.add('human');
+      if (/(water|river|sea|stream)/.test(t)) semantic.add('flow');
+      if (/(mountain)/.test(t)) semantic.add('mountain');
+      if (/(face|human)/.test(t)) semantic.add('human');
 
       return {
         ...template,
@@ -973,11 +1461,13 @@
           voicePipeline.listening = true;
           voicePipeline.startedAt = performance.now();
           voicePipeline.capturedFrames = 0;
+          setVoiceIndicator('active', 'capturing');
           addBubble('system', 'voice listening started (VAD mock)');
         },
         stop() {
           if (!voicePipeline.listening) return;
           voicePipeline.listening = false;
+          setVoiceIndicator(voicePipeline.commandActive ? 'active' : 'idle', voicePipeline.commandActive ? 'listening' : 'idle');
           const elapsed = Math.max(600, performance.now() - voicePipeline.startedAt);
           const byteSize = Math.round((elapsed / 1000) * 32000);
           const payload = new Blob([new Uint8Array(byteSize)], { type: 'audio/wav' });
@@ -1002,25 +1492,25 @@
     function inferIntentVector(text) {
       const t = text.toLowerCase();
       let intentCategory = 'chat';
-      if (/^(run|execute|deploy|start|stop|สั่ง|ทำ)/.test(t)) intentCategory = 'command';
-      if (/(สรุป|explain|what|หา|ค้น|ข้อมูล|request|ช่วยหา)/.test(t)) intentCategory = 'request';
-      if (/(error|ผิด|พัง|fail|broken)/.test(t)) intentCategory = 'error';
+      if (/^(run|execute|deploy|start|stop)/.test(t)) intentCategory = 'command';
+      if (/(summary|explain|what|find|search|data|request|help)/.test(t)) intentCategory = 'request';
+      if (/(error|fail|broken)/.test(t)) intentCategory = 'error';
 
       let emotionalValence = 0;
-      if (/(ดีใจ|great|awesome|thanks|ขอบคุณ)/.test(t)) emotionalValence = 0.65;
-      if (/(เครียด|angry|sad|confused|tired|เหนื่อย|งง)/.test(t)) emotionalValence = -0.65;
+      if (/(great|awesome|thanks)/.test(t)) emotionalValence = 0.65;
+      if (/(angry|sad|confused|tired)/.test(t)) emotionalValence = -0.65;
 
-      const urgent = /(ด่วน|urgent|now|asap|ทันที|เร็ว)/.test(t);
+      const urgent = /(urgent|now|asap|immediately|fast)/.test(t);
       const energyLevel = clamp((text.length / 120) + (urgent ? 0.36 : 0.08), 0, 1);
 
       const concepts = [];
-      if (/(fire|heat|hot|แดง|วิกฤต)/.test(t)) concepts.push('fire');
-      if (/(flow|water|stream|ไหล)/.test(t)) concepts.push('flow');
-      if (/(structure|table|schema|json|order|ระเบียบ)/.test(t)) concepts.push('structure');
-      if (/(mountain|ภูเขา|hill)/.test(t)) concepts.push('mountain');
-      if (/(river|แม่น้ำ|waterfall)/.test(t)) concepts.push('river');
-      if (/(human|มนุษย์|body|ร่างกาย)/.test(t)) concepts.push('human');
-      if (/(face|ใบหน้า|portrait)/.test(t)) concepts.push('face');
+      if (/(fire|heat|hot|critical)/.test(t)) concepts.push('fire');
+      if (/(flow|water|stream)/.test(t)) concepts.push('flow');
+      if (/(structure|table|schema|json|order)/.test(t)) concepts.push('structure');
+      if (/(mountain|hill)/.test(t)) concepts.push('mountain');
+      if (/(river|waterfall)/.test(t)) concepts.push('river');
+      if (/(human|body)/.test(t)) concepts.push('human');
+      if (/(face|portrait)/.test(t)) concepts.push('face');
       if (concepts.length === 0) concepts.push('balance');
 
       let baseShape = 'sphere';
@@ -1047,16 +1537,18 @@
     }
 
     function applyIntent(vector) {
-      fsm.intentCategory = vector.intent_category;
-      fsm.energyLevel = vector.energy_level;
-      fsm.turbulence = vector.visual_parameters.turbulence;
-      fsm.particleDensity = vector.visual_parameters.particle_density;
-      fsm.emotionalValence = vector.emotional_valence;
-      fsm.desiredForm = vector.visual_parameters.base_shape;
-      fsm.load = clamp(fsm.load + vector.energy_level * 38, 0, 100);
-      fsm.entropy = clamp(fsm.entropy + vector.energy_level * 26, 0, 100);
-      fsm.energy = clamp(fsm.energy - vector.energy_level * 9, 0, 100);
-      fsm.state = 'PROCESSING';
+      applyDeltaState(fsm, {
+        intentCategory: vector.intent_category,
+        energyLevel: vector.energy_level,
+        turbulence: vector.visual_parameters.turbulence,
+        particleDensity: vector.visual_parameters.particle_density,
+        emotionalValence: vector.emotional_valence,
+        desiredForm: vector.visual_parameters.base_shape,
+        load: clamp(fsm.load + vector.energy_level * 38, 0, 100),
+        entropy: clamp(fsm.entropy + vector.energy_level * 26, 0, 100),
+        energy: clamp(fsm.energy - vector.energy_level * 9, 0, 100),
+        state: 'PROCESSING'
+      });
 
       if (vector.visual_parameters.base_shape === 'cracks') {
         fsm.shape = 'cloud';
@@ -1222,12 +1714,42 @@
     });
 
 
+    addPanelChrome();
+    initializeSettingTabs();
+
     refs.settingsToggle.addEventListener('click', () => {
-      document.body.classList.toggle('ui-open');
+      const isOpen = document.body.classList.toggle('ui-open');
+      setPanelVisibility('settings', isOpen);
     });
 
     displayButtons.forEach(btn => {
       btn.addEventListener('click', () => setDisplayPage(btn.dataset.page));
+    });
+
+    refs.panelToggles.forEach(toggle => {
+      toggle.addEventListener('change', () => {
+        setPanelVisibility(toggle.dataset.target, toggle.checked);
+      });
+    });
+
+    refs.displayLanguage.addEventListener('change', event => {
+      translateUi(event.target.value);
+    });
+
+    refs.understandingLanguage.addEventListener('change', event => {
+      runtimeConfig.understandingLanguage = event.target.value;
+      commandBus.emit('voice:language', { value: event.target.value });
+    });
+
+    refs.voiceMode.addEventListener('change', event => {
+      runtimeConfig.voiceMode = event.target.value;
+      commandBus.emit('voice:mode', { value: event.target.value });
+    });
+
+    refs.analyzeUrlBtn.addEventListener('click', async () => {
+      const url = refs.externalUrl.value.trim();
+      if (!url) return;
+      await analyzeExternalUrl(url);
     });
 
     document.getElementById('toggle-box-1').addEventListener('click', () => toggleMiniBox(1));
@@ -1241,7 +1763,26 @@
       await processTranscript(transcript, 'voice');
     });
 
-    document.getElementById('voice-btn').addEventListener('click', () => {
+    setupVoiceCommands({
+      white: () => { drawSettings.penColor = '#ffffff'; addBubble('system', 'pen color: white'); markTimeline('white'); },
+      black: () => { drawSettings.penColor = '#000000'; addBubble('system', 'pen color: black'); markTimeline('black'); },
+      freeze: () => setFreezeMode(true),
+      soft: () => { drawSettings.softMode = true; addBubble('system', 'soft draw enabled'); markTimeline('soft'); },
+      save: () => { exportToPDF(); },
+      etc: () => eraseAll(),
+      erase: () => eraseAll(),
+      rev: () => revertLastAction(),
+      draw: () => setFreezeMode(false)
+    });
+
+    refs.voiceButton.addEventListener('click', () => {
+      triggerTouchFeedback(refs.voiceButton);
+      if (!voicePipeline.commandActive) {
+        startVoiceSystem();
+      } else {
+        stopVoiceSystem();
+      }
+
       if (voicePipeline.listening) {
         voiceSystem.stop();
       } else {
@@ -1254,7 +1795,7 @@
     });
 
     document.getElementById('nirodha-btn').addEventListener('click', () => {
-      fsm.state = 'NIRODHA';
+      setFreezeMode(true);
       fsm.shape = 'cloud';
       fsm.intentCategory = 'maintenance';
       fsm.energyLevel = 0.05;
@@ -1268,6 +1809,30 @@
       }, null, 2);
     });
 
+    document.getElementById('freeze-btn').addEventListener('click', () => {
+      triggerTouchFeedback(document.getElementById('freeze-btn'));
+      setFreezeMode(true);
+    });
+
+    document.getElementById('draw-btn').addEventListener('click', () => {
+      triggerTouchFeedback(document.getElementById('draw-btn'));
+      setFreezeMode(false);
+      drawSettings.softMode = false;
+    });
+
+    document.getElementById('save-btn').addEventListener('click', () => {
+      triggerTouchFeedback(document.getElementById('save-btn'));
+      exportToPDF();
+    });
+
+    document.getElementById('erase-btn').addEventListener('click', () => {
+      triggerTouchFeedback(document.getElementById('erase-btn'));
+      eraseAll();
+    });
+
+    document.querySelectorAll('.btn').forEach(btn => {
+      btn.addEventListener('pointerdown', () => triggerTouchFeedback(btn));
+    });
 
     document.addEventListener('visibilitychange', () => {
       setFrameRateActive(!document.hidden);
