@@ -603,6 +603,15 @@
         </select>
       </div>
       <div class="setting-row">
+        <label for="voice-region">Voice Region</label>
+        <select id="voice-region" class="btn">
+          <option value="us">US</option>
+          <option value="eu">EU</option>
+          <option value="apac">APAC</option>
+          <option value="latam">LATAM</option>
+        </select>
+      </div>
+      <div class="setting-row">
         <label><input type="checkbox" id="voice-telemetry" checked /> Enable telemetry</label>
       </div>
     </div>
@@ -753,6 +762,7 @@
       displayLanguage: document.getElementById('display-language'),
       understandingLanguage: document.getElementById('understanding-language'),
       voiceMode: document.getElementById('voice-mode'),
+      voiceRegion: document.getElementById('voice-region'),
       voiceTelemetry: document.getElementById('voice-telemetry')
     };
 
@@ -794,6 +804,8 @@
       displayLanguage: 'th',
       understandingLanguage: 'auto',
       voiceMode: 'standard',
+      voiceRegion: 'apac',
+      gatewayBaseUrl: 'http://localhost:8000',
       deltaStateEnabled: true
     };
 
@@ -863,33 +875,49 @@
       });
     }
 
-    function translateUi(lang) {
+    const i18nBundles = {};
+
+    async function loadLocaleBundle(lang) {
+      if (i18nBundles[lang]) return i18nBundles[lang];
+      const response = await fetch(`./locales/${lang}.json`);
+      if (!response.ok) throw new Error(`locale ${lang} not found`);
+      const data = await response.json();
+      i18nBundles[lang] = data;
+      return data;
+    }
+
+    function t(key, fallback) {
+      const active = i18nBundles[runtimeConfig.displayLanguage] || i18nBundles.en || {};
+      return active[key] || fallback;
+    }
+
+    async function translateUi(lang) {
       runtimeConfig.displayLanguage = lang;
       telemetry.languageChanges += 1;
       commandBus.emit('ui:language', { lang });
-      const map = {
-        th: { chat: 'Chat', emit: 'Emit Intent' },
-        en: { chat: 'Chat', emit: 'Emit Intent' },
-        ja: { chat: 'チャット', emit: '送信' },
-        es: { chat: 'Chat', emit: 'Emitir' }
-      };
-      const t = map[lang] || map.en;
-      refs.chatToggle.textContent = t.chat;
-      document.getElementById('send-btn').textContent = t.emit;
+      try {
+        await loadLocaleBundle(lang);
+      } catch (error) {
+        addBubble('system', `locale fallback: ${error.message}`);
+      }
+      refs.chatToggle.textContent = t('chat_toggle', 'Chat');
+      document.getElementById('send-btn').textContent = t('send', 'Emit Intent');
+      refs.voiceStatus.textContent = t('voice_idle', 'voice: idle');
     }
 
     async function analyzeExternalUrl(url) {
-      refs.urlStatus.textContent = 'status: loading...';
+      refs.urlStatus.textContent = t('url_loading', 'status: loading...');
       try {
-        const response = await fetch(url);
-        const text = await response.text();
-        const snippet = text.replace(/\s+/g, ' ').slice(0, 450);
+        const proxyUrl = `${runtimeConfig.gatewayBaseUrl}/api/v1/proxy/fetch?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl, { headers: { 'X-API-Key': 'demo-key' } });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'proxy failed');
         telemetry.urlAnalyses += 1;
-        refs.urlStatus.textContent = 'status: analyzed';
-        commandBus.emit('url:analyzed', { url, size: text.length });
-        await processTranscript(`URL_ANALYSIS ${snippet}`, 'url');
+        refs.urlStatus.textContent = t('url_analyzed', 'status: analyzed via proxy');
+        commandBus.emit('url:analyzed', { url, size: data.content_length, proxied: true });
+        await processTranscript(`URL_ANALYSIS ${data.snippet}`, 'url');
       } catch (error) {
-        refs.urlStatus.textContent = 'status: failed (CORS/network)';
+        refs.urlStatus.textContent = t('url_failed', 'status: failed (proxy/network)');
         addBubble('system', `url analysis failed: ${error.message}`);
       }
     }
@@ -1848,6 +1876,59 @@
     });
 
 
+
+    async function flushTelemetryToTimeSeries() {
+      const points = telemetry.events.slice(-40).map(event => ({
+        metric: 'ux_event_latency',
+        value: 1,
+        tags: { event: event.eventName, lang: runtimeConfig.displayLanguage }
+      }));
+      if (!points.length) return;
+      try {
+        await fetch(`${runtimeConfig.gatewayBaseUrl}/api/v1/telemetry/ingest`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-API-Key': 'demo-key' },
+          body: JSON.stringify({ points })
+        });
+      } catch (error) {
+        addBubble('system', `telemetry store skipped: ${error.message}`);
+      }
+    }
+
+    let stateSyncSocket = null;
+    function initStateSync() {
+      const session = `u-${Math.random().toString(16).slice(2, 9)}`;
+      const wsUrl = runtimeConfig.gatewayBaseUrl.replace('http', 'ws') + `/ws/state-sync/manifest-room?user_id=${session}`;
+      try {
+        stateSyncSocket = new WebSocket(wsUrl);
+        stateSyncSocket.addEventListener('message', event => {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'state_updated' || payload.type === 'state_snapshot') {
+            applyDeltaState(fsm, payload.shared_state || {});
+          }
+        });
+      } catch (error) {
+        addBubble('system', `state sync offline: ${error.message}`);
+      }
+    }
+
+    function syncStatePatch(delta, userDelta = {}) {
+      if (!stateSyncSocket || stateSyncSocket.readyState !== WebSocket.OPEN) return;
+      stateSyncSocket.send(JSON.stringify({ type: 'patch_state', delta, user_delta: userDelta }));
+    }
+
+    async function refreshVoiceModel() {
+      const lang = runtimeConfig.understandingLanguage === 'auto' ? runtimeConfig.displayLanguage : runtimeConfig.understandingLanguage;
+      const url = `${runtimeConfig.gatewayBaseUrl}/api/v1/voice/model?language=${encodeURIComponent(lang)}&region=${encodeURIComponent(runtimeConfig.voiceRegion)}`;
+      try {
+        const response = await fetch(url);
+        const payload = await response.json();
+        addBubble('system', `${t('voice_model', 'voice model')}: ${payload.model}`);
+      } catch (error) {
+        addBubble('system', `voice model resolve failed: ${error.message}`);
+      }
+    }
+
     addPanelChrome();
     initializeSettingTabs();
 
@@ -1866,18 +1947,26 @@
       });
     });
 
-    refs.displayLanguage.addEventListener('change', event => {
-      translateUi(event.target.value);
+    refs.displayLanguage.addEventListener('change', async event => {
+      await translateUi(event.target.value);
+      await refreshVoiceModel();
     });
 
-    refs.understandingLanguage.addEventListener('change', event => {
+    refs.understandingLanguage.addEventListener('change', async event => {
       runtimeConfig.understandingLanguage = event.target.value;
       commandBus.emit('voice:language', { value: event.target.value });
+      await refreshVoiceModel();
     });
 
     refs.voiceMode.addEventListener('change', event => {
       runtimeConfig.voiceMode = event.target.value;
       commandBus.emit('voice:mode', { value: event.target.value });
+      syncStatePatch({ voiceMode: event.target.value });
+    });
+
+    refs.voiceRegion.addEventListener('change', async event => {
+      runtimeConfig.voiceRegion = event.target.value;
+      await refreshVoiceModel();
     });
 
     refs.analyzeUrlBtn.addEventListener('click', async () => {
@@ -1982,6 +2071,10 @@
     renderCompatFrame();
     renderBlueprintLock();
     renderHUD();
+    translateUi(runtimeConfig.displayLanguage);
+    refreshVoiceModel();
+    initStateSync();
+    setInterval(flushTelemetryToTimeSeries, 15000);
     requestAnimationFrame(tick);
 
     if ('serviceWorker' in navigator) {

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'aetherium-manifest-v1';
-const CORE_ASSETS = ['./', './index.html', './app.webmanifest'];
+const CACHE_NAME = 'aetherium-manifest-v2';
+const CORE_ASSETS = ['./', './index.html', './app.webmanifest', './locales/en.json', './locales/th.json', './locales/ja.json', './locales/es.json'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

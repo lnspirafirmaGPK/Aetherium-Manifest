@@ -180,5 +180,31 @@ class ContractCheckerCliTests(unittest.TestCase):
             Path(payload_path).write_text(original, encoding="utf-8")
 
 
+class GatewayExtensionTests(unittest.TestCase):
+    def test_voice_model_resolver_prefers_language_region_pair(self) -> None:
+        from api_gateway.main import _resolve_voice_model
+
+        self.assertEqual(_resolve_voice_model("th-TH", "apac"), "whisper-thai-pro")
+        self.assertEqual(_resolve_voice_model("de-DE", "eu"), "whisper-general-de")
+
+    def test_telemetry_ingest_and_query(self) -> None:
+        from api_gateway.main import TELEMETRY_TS_DB, TelemetryIngestRequest, ingest_telemetry, query_telemetry
+
+        TELEMETRY_TS_DB.clear()
+        payload = TelemetryIngestRequest(points=[{"metric": "ux_event_latency", "value": 22.0, "tags": {"event": "emit"}}])
+        result = ingest_telemetry(payload, x_api_key="demo")
+        self.assertEqual(result["ingested"], 1)
+        queried = query_telemetry(metric="ux_event_latency", window_seconds=3600, x_api_key="demo")
+        self.assertEqual(queried["count"], 1)
+
+    def test_state_sync_room_supports_shared_and_user_patch(self) -> None:
+        from api_gateway.main import StateSyncRoom
+
+        room = StateSyncRoom()
+        snapshot = room.apply_delta({"shape": "sphere"}, user_id="alice", user_delta={"theme": "dark"})
+        self.assertEqual(snapshot["shared_state"]["shape"], "sphere")
+        self.assertEqual(snapshot["user_state"]["theme"], "dark")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -46,11 +46,11 @@ python3 -m http.server 4173
 ```
 
 ### Recommended Next Steps
-- Add a server-side URL ingestion proxy to avoid browser CORS limitations.
-- Store telemetry in a time-series backend and add UX/latency dashboards.
-- Add locale bundles (`en`, `th`, `ja`, `es`) through dynamic i18n resources.
-- Route voice mode to specialized multilingual ASR models.
-- Add deterministic multi-client state sync (CRDT/OT).
+- ✅ Added server-side URL ingestion proxy endpoint (`/api/v1/proxy/fetch`) to avoid browser CORS limitations.
+- ✅ Added telemetry ingest/query endpoints (`/api/v1/telemetry/*`) as a lightweight time-series store for UX performance analysis.
+- ✅ Added locale bundles (`en`, `th`, `ja`, `es`) as external JSON resources loaded dynamically at runtime.
+- ✅ Added language/region based voice-model resolver (`/api/v1/voice/model`) and frontend region selector.
+- ✅ Added deterministic multi-client state sync WebSocket (`/ws/state-sync/{room_id}`) with shared + user-specific deltas.
 
 ---
 
@@ -78,8 +78,16 @@ Aetherium Manifest คือเลเยอร์แสดงผลฝั่ง 
 โฟลเดอร์ `api_gateway/` มีตัวอย่าง Cognitive DSL gateway พร้อม endpoint สำหรับ emit/validate/health/websocket
 
 ### แนวทางต่อยอด
-- ทำ URL proxy ฝั่งเซิร์ฟเวอร์เพื่อลดปัญหา CORS
-- เก็บ telemetry ลง time-series DB เพื่อวิเคราะห์ประสิทธิภาพ UX
-- ทำ i18n แบบแยกไฟล์ภาษา
-- เลือกโมเดลเสียงตามภาษา/ภูมิภาค
-- เพิ่ม state sync แบบ deterministic สำหรับหลายผู้ใช้
+- ✅ ทำ URL proxy ฝั่งเซิร์ฟเวอร์ผ่าน `/api/v1/proxy/fetch` เพื่อลดปัญหา CORS
+- ✅ เก็บ telemetry ลง time-series store ผ่าน `/api/v1/telemetry/ingest` และสรุปผลผ่าน `/api/v1/telemetry/query`
+- ✅ ทำ i18n แบบแยกไฟล์ภาษาใน `locales/*.json` และโหลดแบบ dynamic
+- ✅ เลือกโมเดลเสียงตามภาษา/ภูมิภาคผ่าน `/api/v1/voice/model` และตัวเลือกภูมิภาคในหน้า Settings
+- ✅ เพิ่ม state sync แบบ deterministic สำหรับหลายผู้ใช้ด้วย `/ws/state-sync/{room_id}`
+
+
+## Extension Ideas
+- Add persisted TSDB backend (InfluxDB/TimescaleDB) with retention + downsampling policies.
+- Add proxy allowlist/denylist + content-type and size guardrails for stronger SSRF safety.
+- Add locale QA checks (missing key scanner + pseudolocale) in CI.
+- Add voice A/B routing and collect WER / latency metrics by language-region cohort.
+- Add CRDT merge (Yjs/Automerge) for conflict-free collaborative editing beyond simple delta updates.
