@@ -1,0 +1,40 @@
+name: Contract and Runtime Quality Checks
+
+on:
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  contract-checker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r api_gateway/requirements.txt
+      - name: Validate schema contracts
+        run: python tools/contracts/contract_checker.py --strict
+
+  runtime-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r api_gateway/requirements.txt
+      - name: Deterministic replay lockstep check
+        run: python -m api_gateway.deterministic_replay --seed 777 --event-log tools/benchmarks/replay_event_log.sample.json --nodes 3
+      - name: Latency perception benchmark
+        run: python tools/benchmarks/latency_perception_benchmark.py --input tools/benchmarks/latency_samples.sample.json
+      - name: Creative stress scenarios
+        run: python tools/benchmarks/creative_stress_scenarios.py
+      - name: Runtime unit tests
+        run: python -m unittest api_gateway.test_aetherbus_extreme api_gateway.test_runtime_quality
