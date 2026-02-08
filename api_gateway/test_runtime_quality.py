@@ -1,4 +1,6 @@
+import subprocess
 import unittest
+from pathlib import Path
 
 from api_gateway.deterministic_replay import replay_lockstep
 from tools.benchmarks.creative_stress_scenarios import run_scenarios
@@ -28,6 +30,13 @@ class LatencyPerceptionBenchmarkTests(unittest.TestCase):
         self.assertIn("raw_rtt_ms", result)
         self.assertIn("perceived_latency_ms", result)
         self.assertNotEqual(result["raw_rtt_ms"]["mean"], result["perceived_latency_ms"]["mean"])
+
+    def test_perception_benchmark_empty_samples_returns_safe_defaults(self) -> None:
+        result = run_benchmark([])
+        self.assertEqual(result["sample_count"], 0)
+        self.assertIsNone(result["raw_rtt_ms"]["mean"])
+        self.assertIsNone(result["perceived_latency_ms"]["p95"])
+        self.assertFalse(result["gunui_target_met"])
 
 
 class CreativeStressScenarioTests(unittest.TestCase):
@@ -139,6 +148,36 @@ class ContractPolicyTests(unittest.TestCase):
         self.assertTrue(audits)
         self.assertIn("ipw_validation.audit.normalized=true", audits[0])
         self.assertIn("ipw_validation.audit.original_sum=", audits[0])
+
+
+class ContractCheckerCliTests(unittest.TestCase):
+    def test_cli_emits_audit_even_when_validation_fails(self) -> None:
+        payload_path = "tools/contracts/payloads/ipw_v1.payload.json"
+        original = Path(payload_path).read_text(encoding="utf-8")
+        try:
+            Path(payload_path).write_text(
+                """{
+  "ipw_type": "IPW_V1",
+  "predictions": [{"action_id": "A", "p": 0.9}, {"action_id": "B", "p": 0.6}],
+  "collapse_threshold": 0.61,
+  "probability_policy": {"requires_normalization": true, "epsilon": 0.0001, "on_violation": "normalize"},
+  "evidence": {"interaction_velocity": 0.73},
+  "unexpected": true
+}
+""",
+                encoding="utf-8",
+            )
+            proc = subprocess.run(
+                ["python", "tools/contracts/contract_checker.py", "--strict"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn("[FAIL] ipw_v1", proc.stdout)
+            self.assertIn("[AUDIT] ipw_validation.audit.normalized=true", proc.stdout)
+        finally:
+            Path(payload_path).write_text(original, encoding="utf-8")
 
 
 if __name__ == "__main__":

@@ -187,8 +187,9 @@ def run_contract_checks(mode: Mode = "strict") -> int:
                 print(f"  - {error}")
         else:
             print(f"[PASS] {contract_name}")
-            for audit in audits:
-                print(f"  [AUDIT] {audit}")
+
+        for audit in audits:
+            print(f"  [AUDIT] {audit}")
 
     return failures
 

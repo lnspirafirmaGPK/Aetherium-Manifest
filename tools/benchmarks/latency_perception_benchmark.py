@@ -17,6 +17,14 @@ def perceived_latency_ms(sample: dict[str, float]) -> float:
 
 
 def run_benchmark(samples: list[dict[str, float]]) -> dict[str, Any]:
+    if not samples:
+        return {
+            "sample_count": 0,
+            "raw_rtt_ms": {"mean": None, "p95": None},
+            "perceived_latency_ms": {"mean": None, "p95": None},
+            "gunui_target_met": False,
+        }
+
     raw = [row["raw_rtt_ms"] for row in samples]
     perceived = [perceived_latency_ms(row) for row in samples]
     return {

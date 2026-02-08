@@ -236,7 +236,7 @@ Together, they transform AI interaction from text-first tooling into a living vi
 
 เพิ่มชุดงานสำหรับยกระดับคุณภาพก่อน merge ทุก PR และต่อยอดการคาลิเบรตเชิง perception:
 
-- **Contract-checker CI:** เพิ่ม workflow `/.github/workflows/contract-and-runtime-checks.yml` ให้รันบน `pull_request` เพื่อ validate payload จริงกับ schema ทั้ง `akashic_envelope_v2`, `embodiment_v1`, `ipw_v1` ผ่าน `tools/contracts/contract_checker.py`.
+- **Contract-checker CI:** เพิ่ม workflow `.github/workflows/contract-and-runtime-checks.yml` ให้รันบน `pull_request` เพื่อ validate payload จริงกับ schema ทั้ง `akashic_envelope_v2`, `embodiment_v1`, `ipw_v1` ผ่าน `tools/contracts/contract_checker.py`.
 - **Deterministic replay harness:** เพิ่ม `api_gateway/deterministic_replay.py` รองรับ `seed + event log` เพื่อตรวจ lockstep consistency ระหว่างหลายโหนด (state hash ต้องตรงกัน).
 - **Latency perception benchmark:** เพิ่ม `tools/benchmarks/latency_perception_benchmark.py` แยกการวัดผล `perceived latency` ออกจาก `raw RTT` เพื่อวัดตามเป้าหมาย GunUI ที่สะท้อนประสบการณ์ผู้ใช้จริง.
 - **Creative stress scenarios:** เพิ่ม `tools/benchmarks/creative_stress_scenarios.py` สำหรับกรณี `high-emotion burst` และ `rapid intent switching` เพื่อตรวจ Manifestation Gate ว่าไม่ spam และไม่โกหก state.
@@ -266,3 +266,4 @@ Together, they transform AI interaction from text-first tooling into a living vi
 2. เพิ่ม **probability drift dashboard** (เช่น KL divergence ของ IPW distribution ราย build) เพื่อจับ quality regression ก่อนขึ้น production.
 3. สร้าง **scenario fuzzer** สำหรับ edge cases เช่น extreme jitter, burst reconnect, และ one-action collapse เพื่อยกระดับ challenge ของ Manifestation Gate.
 4. ผูก audit trail ของ normalization/cadence injection เข้ากับ release note อัตโนมัติ เพื่อให้ governance ตรวจสอบย้อนหลังได้ง่าย.
+5. เพิ่มชุดข้อมูลทดสอบแบบ edge-case library (empty samples, malformed probability vectors, cadence out-of-range) เพื่อให้ regression tests จับบั๊กได้เร็วขึ้นก่อนเข้าระบบจริง.
