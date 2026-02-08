@@ -201,3 +201,33 @@ Together, they transform AI interaction from text-first tooling into a living vi
 - เพิ่ม **Frame Rate Management (Nirodha-friendly)** โดยจำกัดอัตราเรนเดอร์ตาม `targetFps` และลดเฟรมเมื่อ tab ไม่ active.
 
 > หมายเหตุ: เวอร์ชันนี้ยังเป็น prototype แบบ browser-only โดยใช้ mock implementation สำหรับ VAD/STT/LLM adapter เพื่อคงความสามารถรันได้ทันทีโดยไม่ต้องลง dependency เพิ่ม.
+
+## Canonical Documentation Architecture (New)
+
+เพื่อให้ repo อ่านและพัฒนาได้ระยะยาว มีการจัดโครงสร้างเอกสาร Canon ใน `docs/` แบบแยกหมวดมาตรฐาน:
+
+- `docs/README.md` (ศูนย์กลาง Canon)
+- `docs/00_PURPOSE_AND_SCOPE.md`
+- `docs/01_SYSTEM_OVERVIEW.md`
+- `docs/02_COMPONENTS.md`
+- `docs/03_INTERFACES.md`
+- `docs/04_DATA_SCHEMAS.md`
+- `docs/05_ALGORITHMS.md`
+- `docs/06_POLICIES.md`
+- `docs/07_SAFETY_AND_GOVERNANCE.md`
+- `docs/08_TEST_PLAN.md`
+- `docs/schemas/*.json` (ABI contracts)
+- `docs/appendices/*.md` (glossary/state machine/roadmap)
+
+แนวทางบังคับใช้:
+- Canonical docs มีลำดับความสำคัญเหนือ implementation details
+- Schema ใดๆ ใน `docs/schemas/` ให้ถือเป็น versioned ABI
+- การเปลี่ยน behavior สำคัญต้องอิง `Manifestation Gate`, `Embodiment Contract`, และ `Goal-Lock`
+
+## คำแนะนำการต่อยอดเชิงประสิทธิภาพและความท้าทายเชิงสร้างสรรค์
+
+1. สร้าง `contract-checker` CI step เพื่อ validate payload จริงกับ schema (`akashic_envelope_v2`, `embodiment_v1`, `ipw_v1`) ทุก PR
+2. เพิ่ม deterministic replay harness (seed + event log) เพื่อเทียบผล lockstep ระหว่างโหนด
+3. ทำ latency perception benchmark แยกจาก raw RTT เพื่อวัดผลตามเป้าหมาย GunUI จริง
+4. เพิ่ม “creative stress scenarios” เช่น high-emotion burst / rapid intent switching เพื่อทดสอบ Manifestation Gate ว่าไม่ spam และไม่โกหก state
+5. สร้าง knowledge graph ของ intent-to-light mapping จากข้อมูล production anonymized เพื่อปรับ calibration ให้แม่นขึ้นโดยไม่ละเมิด privacy
