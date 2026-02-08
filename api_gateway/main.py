@@ -104,6 +104,13 @@ def _ensure_api_key(x_api_key: str | None) -> None:
         raise HTTPException(status_code=401, detail="missing X-API-Key")
 
 
+def _extract_ws_api_key(websocket: WebSocket) -> str | None:
+    header_api_key = websocket.headers.get("x-api-key")
+    if header_api_key:
+        return header_api_key
+    return websocket.query_params.get("api_key")
+
+
 def _metrics_snapshot() -> dict[str, Any]:
     total = METRICS.total_dsl_submissions
     compliance = 100.0 if total == 0 else round((1 - (METRICS.validation_failures / total)) * 100, 2)
@@ -192,6 +199,19 @@ def health_check() -> dict[str, Any]:
 
 @app.websocket("/ws/cognitive-stream")
 async def cognitive_stream(websocket: WebSocket) -> None:
+    api_key = _extract_ws_api_key(websocket)
+    if not api_key:
+        await websocket.accept()
+        await websocket.send_json(
+            {
+                "status": "failed",
+                "detail": "missing X-API-Key",
+                "code": 401,
+            }
+        )
+        await websocket.close(code=1008, reason="missing X-API-Key")
+        return
+
     await websocket.accept()
     try:
         while True:
